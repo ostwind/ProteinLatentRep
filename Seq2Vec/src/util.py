@@ -1,8 +1,8 @@
-
 import pickle
 import os
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from model import *
 '''
 embedding ============write_pred_target===> matrix.p, target.p =train_test_split===> X_train, X_test, y_train, y_test
@@ -16,19 +16,23 @@ def write_pred_target(embedding, target_catalog_file = '../data/meta_files/famil
 
     df = pd.read_table(target_catalog_file)
     model = Seq2Vec(embedding)
-    realization = model.all_ids()
+    ids_in_model = model.all_ids()
 
-    # write sample vector and label sample-wise
+    # ids in our embedding contains AccessionID
+    AccessionIDs = [proteinID.split('|')[1] for proteinID in ids_in_model]
+    df = df[df['SwissProtAccessionID'].isin(AccessionIDs)]
+
     target = []
     matrix = []
     i = 0
-    for proteinID in realization:
+    # write sample vector and label sample-wise
+    for proteinID in ids_in_model:
         AccessionID = proteinID.split('|')[1]
         if AccessionID in df['SwissProtAccessionID'].values:
             matrix.append( model.vect_rep(proteinID) )
             target.append( df[df['SwissProtAccessionID'] == AccessionID]['FamilyID'].values[0] )
             i += 1
-        if i % 1000 == 0:
+        if i % 5000 == 0:
             print(i/50000)
             if i == 50000:
                 break
@@ -42,19 +46,14 @@ def write_pred_target(embedding, target_catalog_file = '../data/meta_files/famil
 def load_x_y(x = 'matrix.p', y = 'target.p'):
     return pickle.load( open(x, 'rb') ), pickle.load( open(y, 'rb') )
 
-def train_test_split():
+def load_normalize_split():
     matrix, target = load_x_y()
-    #careful, also does columnwise normalization
     matrix_normed = (matrix - matrix.min(0)) / matrix.ptp(0)
 
     X_train, X_test, y_train, y_test = train_test_split(
     matrix_normed, target, test_size=0.33, random_state=42)
 
     return X_train, X_test, y_train, y_test
-
-''' functions from biovec, an older paper that applies word2vec to sequences
-    Not used in model.py, but may be useful for data preprocessing.
-'''
 
 def split_ngrams(seq, n):
     """
@@ -69,6 +68,10 @@ def split_ngrams(seq, n):
         str_ngrams.append(x)
     return str_ngrams
 
+
+''' functions from biovec, an older paper that applies word2vec to sequences
+    Not used in model.py, but may be useful for data preprocessing.
+'''
 def generate_corpusfile(fname, n, out):
     '''
     Args:

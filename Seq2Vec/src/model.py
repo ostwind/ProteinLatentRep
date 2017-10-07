@@ -6,6 +6,7 @@ from gensim.models import Doc2Vec
 from Bio import SeqIO
 import os
 import pickle
+from util import *
 
 class Seq2Vec(doc2vec.Doc2Vec):
     def __init__(self,embedding_path = None,
@@ -41,10 +42,10 @@ class Seq2Vec(doc2vec.Doc2Vec):
         self.model = Doc2Vec.load(self.embedding_path)
 
     def _preprocess_fasta(self): # existence of pickle to tell this class no need for generating data dir
-        assert os.path.isfile(self.fasta_path), "fasta not found at %s while trying to generate embedding" %(self.fasta_path)
+        assert os.path.isfile(self.fasta_path), "fasta not found at %s, and something wrong with data dir" %(self.fasta_path)
         print('Generating corpus files from fasta file...')
 
-        dir_key = gen_dir( filepath = self.fasta_path, n = self.window_size, out_dir = data_dir )
+        dir_key = gen_dir( filepath = self.fasta_path, n = self.window_size, out_dir = self.data_dir )
         pickle.dump(dir_key, open("dir_key.p", "wb"))
 
     def _learn_embedding(self):
@@ -96,16 +97,15 @@ def gen_dir(filepath,n, out_dir):
     ids = dict()
     for r in SeqIO.parse(filepath, "fasta"):
         ngram_patterns = split_ngrams(r.seq, n)
-        f = open(out_dir+str(r.id)+'.txt', 'w')
+        f = open(out_dir+str(r.id)+'.txt', 'w+')
         ids[out_dir + str(r.id)+'.txt'] = str(r.id)
 
         for ngram_pattern in ngram_patterns:
             f.write(" ".join(ngram_pattern))
         f.close()
-        #sys.stdout.write(".")
     return ids
 
-# I don't know how this works, except it preprocesses input to doc2vec
+# I don't know how this works, except it instantiates nice labeled input to doc2vec
 class LabeledLineSentence(object):
     def __init__(self, sources):
         self.sources = sources

@@ -3,7 +3,7 @@ from model import Seq2Vec
 
 dir = os.path.dirname(__file__)
 fasta_input = os.path.join(dir, '../data/uniprot.fasta')
-data_dir = os.path.join(dir, './data/dis_prot_processed/')
+data_dir = os.path.join(dir, '../data/dis_prot_processed/')
 
 if __name__ == '__main__':
 
@@ -14,4 +14,4 @@ if __name__ == '__main__':
     print(example_vect)
 
     # all ids
-    print(len(model.all_ids()))
+    #print(model.all_ids())
