@@ -34,8 +34,9 @@ def write_pred_target(embedding, target_catalog_file = '../data/meta_files/famil
             i += 1
         if i % 5000 == 0:
             print(i/50000)
-            if i == 50000:
+            if i == 50000 :
                 break
+
     matrix= np.array(matrix)
 
     with open('matrix.p', 'wb') as x:

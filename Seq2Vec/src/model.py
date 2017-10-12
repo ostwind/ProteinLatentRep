@@ -1,7 +1,6 @@
-from gensim.models import doc2vec
 from gensim import utils
 from gensim.models.doc2vec import LabeledSentence
-from gensim.models import Doc2Vec
+from gensim.models import doc2vec, Doc2Vec
 
 from Bio import SeqIO
 import os
@@ -11,7 +10,7 @@ from util import *
 class Seq2Vec(doc2vec.Doc2Vec):
     def __init__(self,embedding_path = None,
      fasta_path = None, data_dir = None,
-    window_size=3, size=250, window=5,
+    window_size=3, size=100, window=5,
     min_count=2, workers=4, epochs = 5):
 
         self.embedding_path = embedding_path
@@ -54,10 +53,10 @@ class Seq2Vec(doc2vec.Doc2Vec):
         dir_key = pickle.load(open('dir_key.p', "rb"))
         sentences = LabeledLineSentence(dir_key)
 
-        self.model = Doc2Vec( sentences, dm = 1,
+        self.model = Doc2Vec( sentences, dm = 0,
         size=self.size, window=self.window, #min_count=50,
-        negative = 0, hs = 1,
-        sample = 1e-5, # downsampling
+        negative = 2, hs = 1,
+        sample = 1e-3, # downsampling
         workers= self.workers, alpha=.025)
         self.model.save(self.embedding_path)
 
@@ -96,6 +95,7 @@ def gen_dir(filepath,n, out_dir):
     '''
     ids = dict()
     for r in SeqIO.parse(filepath, "fasta"):
+        print(r)
         ngram_patterns = split_ngrams(r.seq, n)
         f = open(out_dir+str(r.id)+'.txt', 'w+')
         ids[out_dir + str(r.id)+'.txt'] = str(r.id)

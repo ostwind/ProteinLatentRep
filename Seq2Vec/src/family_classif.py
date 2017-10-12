@@ -16,7 +16,7 @@ from sklearn.metrics import accuracy_score
 we do protein family classification as the downstream task to Seq2Vec
 the paper did cross validation and gridsearch (for SVM classifier),
 '''
-write_pred_target('ws3_size100_win25_e5.d2v')
+write_pred_target('ws3_size250_win5_e5.d2v')
 X_train, X_test, y_train, y_test = load_normalize_split()
 #k_fold = kFold(n_splits = 10)
 #cross_val_scores = [svc.fit(matrix[train], target[train]).score(matrix[test], target[test]) for train, test in k_fold.split(matrix)]
