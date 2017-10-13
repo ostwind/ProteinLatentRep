@@ -1,20 +1,20 @@
-''' this file's dir should be sibling dir of data dir
+''' this file's dir should be sibling to data dir
 
-    first transform raw text into csv
-    transform raw text into csv again, but eliminating non informative positions
-    one-hot encode and pickle
+    transform raw text into csv
+    eliminating non informative positions
+    integer encode (optionally one-hot encode) and pickle
     pytorch loader (in loader.py) simply unpacks then yields samples
 '''
 import os
 import pandas as pd
 
 from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import OneHotEncoder
+#from sklearn.preprocessing import OneHotEncoder
 import pickle
 import torch
-from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 
+#TODO parse fasta, etc. formats beyond .txt
 def txt_to_csv(raw_txt_path, csv_path, info_positions = None):
     with open(raw_txt_path) as f:
         content = f.readlines()
@@ -70,7 +70,7 @@ def one_hot_pickle(csv_path):
     name_list = df['keys'].tolist()
 
     label_encoder = LabelEncoder()
-    onehot_encoder = OneHotEncoder(sparse=False)
+    #onehot_encoder = OneHotEncoder(sparse=False)
     dataset = []
     for index in range(len(seq_list)):
         values = np.array(list(seq_list[index]))
@@ -83,7 +83,7 @@ def one_hot_pickle(csv_path):
     pickle.dump( np.array(name_list), open( "names.p", "wb" ) )
 
 def preprocess(raw_txt_path = '../data/PF00076_rp55.txt'):
-    assert os.path.isfile(raw_txt_path), '%s not a valid txt file!' %(raw_txt_path)
+    assert os.path.isfile(raw_txt_path), '%s not found!' %(raw_txt_path)
     csv_path = '../data/rrm_rp55.csv'
     informative_csv_path = '../data/rrm_rp55_condensed.csv'
 
