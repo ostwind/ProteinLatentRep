@@ -1,6 +1,10 @@
 Ungoing tickets:
-	feel free to work on unassigned tickets
-1. implement VAE (Shasha)
+	team: feel free to work on unassigned tickets
+1. implement VAE (Shasha) Done!
+	- check results w/ affinity regression
+	- decay learning rate for training
+	- implement sparse penalty
+	- find ways to reduce overfit
 2. try other convolutional autoencoder architectures:
 	e.g. https://arxiv.org/pdf/1706.04970.pdf
 
