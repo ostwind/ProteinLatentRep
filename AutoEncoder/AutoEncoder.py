@@ -139,7 +139,7 @@ def train(epoch):
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader),
                 loss.data[0] / len(data)))
-
+        pd.DataFrame(data.data.numpy()).to_csv('original_epoch%d' % epoch)
     print('====> Epoch: {} Average loss: {:.4f}'.format(
       epoch, train_loss / len(train_loader.dataset)))
 
@@ -149,16 +149,16 @@ def test(epoch):
     model.eval()
     test_loss = 0
     for i, dic in enumerate(val_loader):
+        data = Variable(dic['seq'].view(-1, 3608), volatile=True)
         if args.cuda:
-            data = dic['seq'].cuda()
-        data = Variable(data.view(-1, 3608), volatile=True)
+            data = data.cuda()
         z_batch, recon_batch, mu, logvar = model(data)
         test_loss += loss_function(recon_batch, data,
             mu, logvar).data[0]
     test_loss /= len(test_loader.dataset)
     print('====> Test set loss: {:.4f}'.format(test_loss))
-    pd.DataFrame(recon_batch.numpy).to_csv('reconstructed_epoch%d'%epoch)
-    pd.DataFrame(data.numpy).to_csv('original_epoch%d'%epoch)
+    pd.DataFrame(recon_batch.data.numpy()).to_csv('reconstructed_epoch%d'%epoch)
+    pd.DataFrame(data.data.numpy()).to_csv('original_epoch%d'%epoch)
     return (test_loss)
 
 
