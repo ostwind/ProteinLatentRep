@@ -21,5 +21,7 @@ data_pickle_path = "data.p", name_pickle_path = "names.p"):
     return loader
 
 if __name__ == "__main__":
+    print('f')
     for data, label in loader():
-        print(data.shape, label.shape)
+        pass
+        #print(data.shape, label.shape)
