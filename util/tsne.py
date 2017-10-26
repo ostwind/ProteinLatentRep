@@ -1,7 +1,7 @@
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 
-def tsne_plot(tsne_plot_name, labels, latent_representation, take_first_n = 4000, 
+def tsne_plot(tsne_plot_name, labels, latent_representation, take_first_n = 200, 
       perplexity = 40, n_iter = 500, n_components = 2, ): 
       ''' list int, str labels: color point according to this color 
           np.ndarray latent_representation: [ Num of sequences X Dim of Latent Rep. ]
