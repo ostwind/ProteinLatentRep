@@ -25,20 +25,19 @@ if __name__ == '__main__':
     name_ordering = list(model.all_ids())
 
     # filtering by first letter of sequence names 
-    starting_letters = ['C','B', 'D', 'F', 'Z', 'E', 'C', 'H']
+    starting_letters = ['B', 'E', 'A', 'C', 'H']
     name_ordering = [ name for name in name_ordering if name[0] in starting_letters]
 
     representation = []
     for name in name_ordering:
-        representation.append(
-        model.vect_rep( name ))
+        representation.append(model.vect_rep( name ))
 
     representation = np.array(representation)
 
-    labels = [ name[:1] for name in name_ordering ]
+    labels = [ name[0] for name in name_ordering ]
 
     tsne_plot('seq2vec_%s' %("".join(starting_letters)),
-    labels[1000:2000], representation[1000:2000], take_first_n = 500)      
+    labels, representation, take_first_n = 9000)      
     
     
     

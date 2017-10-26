@@ -10,12 +10,12 @@ from util import *
 class Seq2Vec(doc2vec.Doc2Vec):
     def __init__(self,embedding_path = None,
      fasta_path = None, data_dir = None,
-    window_size=3, size=100, window=5,
+    window_size=3, size=100, window=20,
     min_count=2, workers=4, epochs = 10):
 
         self.embedding_path = embedding_path
         if not embedding_path:
-            self.embedding_path = 'ws%s_size%s_win%s_e%s.d2v' %(window_size, size, window, epochs)
+            self.embedding_path = 'size%s_win%s_e%s.d2v' %( size, window, epochs)
 
         if os.path.isfile(self.embedding_path):
             print('loading model at %s' %(self.embedding_path))
@@ -55,7 +55,7 @@ class Seq2Vec(doc2vec.Doc2Vec):
 
         self.model = Doc2Vec( sentences, dm = 0,
         size=self.size, window=self.window, #min_count=50,
-        negative = 2, hs = 1,
+        negative = 10, hs = 1,
         sample = 1e-3, # downsampling
         workers= self.workers, alpha=.025)
         self.model.save(self.embedding_path)
