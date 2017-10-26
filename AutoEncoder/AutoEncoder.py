@@ -155,7 +155,7 @@ def test(epoch):
         z_batch, recon_batch, mu, logvar = model(data)
         test_loss += loss_function(recon_batch, data,
             mu, logvar).data[0]
-    test_loss /= len(test_loader.dataset)
+    test_loss /= len(val_loader.dataset)
     print('====> Test set loss: {:.4f}'.format(test_loss))
     pd.DataFrame(recon_batch.data.numpy()).to_csv('reconstructed_epoch%d'%epoch)
     pd.DataFrame(data.data.numpy()).to_csv('original_epoch%d'%epoch)
