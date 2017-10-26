@@ -11,7 +11,7 @@ class Seq2Vec(doc2vec.Doc2Vec):
     def __init__(self,embedding_path = None,
      fasta_path = None, data_dir = None,
     window_size=3, size=100, window=5,
-    min_count=2, workers=4, epochs = 5):
+    min_count=2, workers=4, epochs = 10):
 
         self.embedding_path = embedding_path
         if not embedding_path:
@@ -95,8 +95,8 @@ def gen_dir(filepath,n, out_dir):
     '''
     ids = dict()
     for r in SeqIO.parse(filepath, "fasta"):
-        print(r)
         ngram_patterns = split_ngrams(r.seq, n)
+        #print(out_dir+str(r.id).replace("/","_")+'.txt')
         f = open(out_dir+str(r.id)+'.txt', 'w+')
         ids[out_dir + str(r.id)+'.txt'] = str(r.id)
 
@@ -124,14 +124,14 @@ class LabeledLineSentence(object):
                     #print(utils.to_unicode(line).split())
                     yield LabeledSentence(utils.to_unicode(line).split(), [prefix + '_%s' % item_no])
 
-    # def to_array(self):
-    #     self.sentences = []
-    #     for source, prefix in self.sources.items():
-    #         with utils.smart_open(source) as fin:
-    #             for item_no, line in enumerate(fin):
-    #                 self.sentences.append(LabeledSentence(utils.to_unicode(line).split(), [prefix + '_%s' % item_no]))
-    #     return self.sentences
-    #
-    # def sentences_perm(self):
-    #     shuffle(self.sentences)
-    #     return self.sentences
+    def to_array(self):
+        self.sentences = []
+        for source, prefix in self.sources.items():
+            with utils.smart_open(source) as fin:
+                for item_no, line in enumerate(fin):
+                    self.sentences.append(LabeledSentence(utils.to_unicode(line).split(), [prefix + '_%s' % item_no]))
+        return self.sentences
+    
+    def sentences_perm(self):
+        shuffle(self.sentences)
+        return self.sentences
