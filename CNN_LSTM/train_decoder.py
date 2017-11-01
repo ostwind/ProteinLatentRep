@@ -44,6 +44,8 @@ def main(args):
     # Build vocabulary of amino acids
     vocab = build_vocab(df)
     
+    BOOM # Stop here, work in progress
+    
     # Build data loaders
     train_index = pd.read_csv('../data/train_index.csv',header=None).iloc[:,0]
     train_loader = RRM_Sequence(indices=train_index, info_path=args.info_path)
@@ -110,13 +112,11 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    args = parser.parse_args()
     
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
-    torch.manual_seed(args.seed)
-    if args.cuda:
-        torch.cuda.manual_seed(args.seed)
-
+    parser.add_argument('--no-cuda', action='store_true', default=False,
+                        help='disables CUDA training')
+    parser.add_argument('--seed', type=int, default=1, metavar='S',
+                        help='random seed (default: 1)')    
     parser.add_argument('--model_path', type=str, default='./models/',
                         help='path for saving trained models')
     parser.add_argument('--raw_txt_path', type=str, default='../data/PF00076_rp55.txt', 
@@ -151,7 +151,14 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--learning_rate', type=float, default=0.001)
+
+    args = parser.parse_args()    
     
-    args = parser.parse_args()
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    torch.manual_seed(args.seed)
+    if args.cuda:
+        torch.cuda.manual_seed(args.seed)
+    
     print(args)
     main(args)
+    

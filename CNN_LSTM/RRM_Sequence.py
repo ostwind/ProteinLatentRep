@@ -22,8 +22,17 @@ class RRM_Sequence(Dataset):
 
     def __getitem__(self, idx):
         rrm_name = self.names[idx]
-        rrm = pd.read_csv(info_path, index_col=0)
+        
+        print(rrm_name) # DEBUGGING
+        
+        rrm = pd.read_csv(self.csv_file, index_col=0)
+
+        print(rrm.index.values) # DEBUGGING
+        print(rrm['A0A1B7NG40.1_71-102']) # DEBUGGING
+        BOOM # DEBUGGING
+        
         rrm = rrm[rrm_name]
+        
         rrm = torch.from_numpy(rrm).contiguous().float()
         sample = {'name': rrm_name, 'seq': rrm}
 
