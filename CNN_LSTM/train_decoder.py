@@ -7,13 +7,13 @@ import torch
 import torch.nn as nn
 import numpy as np
 import pandas as pd
-import pickle
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader  # (?)
+from build_vocab import build_vocab
 from preprocessing import txt_to_csv, informative_positions
 from decoder import DecoderRNN
-from torch.autograd import Variable 
-from torch.nn.utils.rnn import pack_padded_sequence
-from torchvision import transforms
+from torch.autograd import Variable
+from torch.nn.utils.rnn import pack_padded_sequence  # (?)
+from torchvision import transforms  # (?)
 
 # def to_var(x, volatile=False):
 #     if torch.cuda.is_available():
@@ -26,32 +26,25 @@ def main(args):
         os.makedirs(args.model_path)
     
     # Preprocess the RRM sequence data
-    raw_txt_path = '../data/PF00076_rp55.txt'  # Path for aligned RRM input txt file
-    csv_path = '../data/rrm_rp55.csv'  # Path for RRM sequence output csv file
-    top_n = 82  # Include top n most populated positions
+    if not os.path.exists(args.info_path):
+        # Check that raw data exists and convert to csv
+        assert os.path.isfile(args.raw_txt_path), '%s not found!' %(args.raw_txt_path)
+        df = txt_to_csv(args.raw_txt_path, args.csv_path)
+
+        # Filter positions that are not in top_n most populated
+        df = informative_positions(df, top_n=args.top_n)
+
+        # Save filtered csv for future use
+        df.to_csv(args.info_path)
+    else:
+        print('Using existing csv of informative positions...')
+        df = pd.read_csv(args.info_path, index_col=0)
+
+    # Build vocabulary of amino acids
+    vocab = build_vocab(df)
     
-    # Check that raw data exists and convert to csv
-    assert os.path.isfile(raw_txt_path), '%s not found!' %(raw_txt_path)
-    df = txt_to_csv(raw_txt_path, csv_path)
+    stop_here_work_in_progress
     
-    # Filter positions that are not in top_n most populated
-    df = informative_positions(df, top_n=top_n)
-    
-    BOOM # STOP HERE FOR NOW
-    
-#     # Image preprocessing
-#     # For normalization, see https://github.com/pytorch/vision#models
-#     transform = transforms.Compose([ 
-#         transforms.RandomCrop(args.crop_size),
-#         transforms.RandomHorizontalFlip(), 
-#         transforms.ToTensor(), 
-#         transforms.Normalize((0.485, 0.456, 0.406), 
-#                              (0.229, 0.224, 0.225))])
-    
-    # Load vocabulary wrapper
-    with open(args.vocab_path, 'rb') as f:
-        vocab = pickle.load(f)
-        
     # Build data loader
     data_loader = get_loader(args.image_dir, args.caption_path, vocab, 
                              transform, args.batch_size,
@@ -112,6 +105,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str, default='./models/',
                         help='path for saving trained models')
+    parser.add_argument('--raw_txt_path', type=str, default='../data/PF00076_rp55.txt', 
+        help='path for aligned RRM input txt file')
+    parser.add_argument('--csv_path', type=str, default='../data/rrm_rp55.csv', 
+        help='path for RRM sequence output csv file')
+    parser.add_argument('--info_path', type=str, default='../data/rrm_rp55_info.csv', 
+        help='path for filtered RRM sequence csv file')
+    parser.add_argument('--top_n', type=int, default=82, 
+        help='include top n most populated positions')
 #     parser.add_argument('--crop_size', type=int, default=224 ,
 #                         help='size for randomly cropping images')
 #     parser.add_argument('--vocab_path', type=str, default='./data/vocab.pkl',
