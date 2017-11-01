@@ -1,11 +1,5 @@
 # Define the LSTM decoder for the CNN+LSTM autoencoder architecture
-
-# Adapted from:
-# https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/03-advanced/image_captioning/model.py
-
-# TODO:
-# Continue adapting from use with images
-# Replace sample function (Also will need sample.py eventually)
+# Adapted from https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/03-advanced/image_captioning/model.py
 
 import torch
 import torch.nn as nn

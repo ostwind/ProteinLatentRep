@@ -1,15 +1,5 @@
 # Train the LSTM decoder for the CNN+LSTM autoencoder architecture
-
-# Adapted from:
-# https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/03-advanced/image_captioning/train.py
-
-# TODO:
-# Add preprocessing (IN PROGRESS)
-# Replace vocab
-# Replace data_loader and for loop that iterates over training data
-# Integrate with CNN encoder (Currently using dummy features to feed into LSTM)
-# Use a validation set to do any hyperparameter tuning (See below)
-# Play around with model params (Also review other hyperparams we could tune)
+# Adapted from https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/03-advanced/image_captioning/train.py
 
 import os
 import argparse
