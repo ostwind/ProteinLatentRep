@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pickle
 from torch.utils.data import DataLoader
-from preprocessing import informative_positions
+from preprocessing import txt_to_csv, informative_positions
 from decoder import DecoderRNN
 from torch.autograd import Variable 
 from torch.nn.utils.rnn import pack_padded_sequence
@@ -27,6 +27,7 @@ def main(args):
     
     # Preprocess the RRM sequence data
     raw_txt_path = '../data/PF00076_rp55.txt'  # Path for aligned RRM input txt file
+    csv_path = '../data/rrm_rp55.csv'  # Path for RRM sequence output csv file
     top_n = 82  # Include top n most populated positions
     
     # Check that raw data exists and convert to csv
@@ -34,11 +35,9 @@ def main(args):
     df = txt_to_csv(raw_txt_path, csv_path)
     
     # Filter positions that are not in top_n most populated
-    df = informative_positions(df, top_n=N)
+    df = informative_positions(df, top_n=top_n)
     
-    from IPython.display import display  # DEBUGGING
-    display(df)  # DEBUGGING
-    BOOM  # DEBUGGING
+    BOOM # STOP HERE FOR NOW
     
 #     # Image preprocessing
 #     # For normalization, see https://github.com/pytorch/vision#models
