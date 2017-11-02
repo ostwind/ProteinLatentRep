@@ -9,17 +9,12 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
-from torch.nn.utils.rnn import pack_padded_sequence  # (?)
-from torchvision import transforms  # (?)
+# from torch.nn.utils.rnn import pack_padded_sequence  
 from build_vocab import build_vocab
 from preprocessing import txt_to_csv, informative_positions
-from RRM_Sequence import RRM_Sequence
 from decoder import DecoderRNN
+from EncoderCNN import ResNetEncoder
 
-# def to_var(x, volatile=False):
-#     if torch.cuda.is_available():
-#         x = x.cuda()
-#     return Variable(x, volatile=volatile)
 
 def main(args):        
     # Create model directory
@@ -113,11 +108,11 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--no-cuda', action='store_true', default=False,
+    parser.add_argument('--no-cuda', action='store_true', default=True,
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')    
-    parser.add_argument('--model_path', type=str, default='./models/',
+    parser.add_argument('--model_path', type=str, default='./',
                         help='path for saving trained models')
     parser.add_argument('--raw_txt_path', type=str, default='../data/PF00076_rp55.txt', 
         help='path for aligned RRM input txt file')
@@ -127,13 +122,6 @@ if __name__ == '__main__':
         help='path for filtered RRM sequence csv file')    
     parser.add_argument('--top_n', type=int, default=82, 
         help='include top n most populated positions')
-#     parser.add_argument('--vocab_path', type=str, default='./data/vocab.pkl',
-#                         help='path for vocabulary wrapper')
-#     parser.add_argument('--image_dir', type=str, default='./data/resized2014',
-#                         help='directory for resized images')
-#     parser.add_argument('--caption_path', type=str,
-#                         default='./data/annotations/captions_train2014.json',
-#                         help='path for train annotation json file')
 
     parser.add_argument('--log_step', type=int , default=10,
                         help='step size for prining log info')

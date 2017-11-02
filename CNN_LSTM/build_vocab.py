@@ -8,7 +8,9 @@ import pandas as pd
 from collections import Counter
 
 class Vocabulary(object):
+
     """Simple vocabulary wrapper."""
+
     def __init__(self):
         self.word2idx = {}
         self.idx2word = {}
@@ -29,7 +31,9 @@ class Vocabulary(object):
         return len(self.word2idx)
 
 def build_vocab(df):
-    """Builds vocabulary of amino acids that appear in csv at csv_path"""
+
+    """Builds vocabulary of amino acids that appear 
+    in csv at csv_path"""
     
     print('Building vocabulary of amino acids...')
     
@@ -37,19 +41,11 @@ def build_vocab(df):
     vocab = Vocabulary()
     
     # Add words from RRM sequences
-    for word in df.values.flat: # Each "word" is a single amino acid
-        if word == 'X':
-            vocab.add_word('<unk>')
-        elif word == '-':
-            vocab.add_word('<gap>')
-        else:
-            vocab.add_word(word)
+    for word in df.values.flat: 
+    # Each "word" is a single amino acid
+        vocab.add_word(word)
     
     # Add special tokens
-    vocab.add_word('<pad>')
     vocab.add_word('<start>')
     vocab.add_word('<end>')
-    vocab.add_word('<unk>')
-    vocab.add_word('<gap>')
-
     return vocab

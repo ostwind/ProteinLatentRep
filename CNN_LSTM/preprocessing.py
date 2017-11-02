@@ -52,7 +52,7 @@ def informative_positions(df, top_n=164, placeholder='-'):
 
     return df[positions_to_keep]
 
-def encode_output(df, onehot_path, scheme='onehot_encoder', root_dir='../data'):
+def encode_output(df, onehot_path, label_encoder_path, scheme='onehot_encoder', root_dir='../data'):
 
     """encodes labels either into one-hot or integers, 
     output one csv for each RRM"""
@@ -62,6 +62,7 @@ def encode_output(df, onehot_path, scheme='onehot_encoder', root_dir='../data'):
     vocab = np.unique(df)
     label_encoder = LabelEncoder()
     label_encoder.fit(vocab)
+    pickle.dump(label_encoder, open(label_encoder_path, "wb" ))
     encoded = label_encoder.transform(df.values.ravel())\
     .reshape(df.shape)
     if scheme == 'onehot_encoder':
@@ -89,6 +90,8 @@ def preprocess(raw_txt_path = '../data/PF00076_rp55.txt'):
         help='include top n most populated positions')
     parser.add_argument('--encoder_path', type=str, default='../data/onehot.p', 
         help='path for one-hot encoder')
+    parser.add_argument('--label_encoder_path', type=str, default='../data/label_encoder.p', 
+        help='path for one-hot encoder')
     parser.add_argument('--encoded_output_path', type=str, default='../data', 
         help='path for one-hot encoded individual RRM output csv files')
 
@@ -97,13 +100,14 @@ def preprocess(raw_txt_path = '../data/PF00076_rp55.txt'):
     csv_path = args.csv_path 
     N = args.top_n
     onehot_path  = args.encoder_path
+    label_encoder_path = args.label_encoder_path
     encoded_output_path = args.encoded_output_path
     assert os.path.isfile(raw_txt_path), '%s not found!' %(raw_txt_path)
 
     df = txt_to_csv(raw_txt_path, csv_path) # first convert to csv
     #filter empty positions
     df = informative_positions(df, top_n=N)
-    encode_output(df, onehot_path, root_dir=encoded_output_path)
+    encode_output(df, onehot_path, label_encoder_path, root_dir=encoded_output_path)
 
 if __name__ == "__main__":
     preprocess()
