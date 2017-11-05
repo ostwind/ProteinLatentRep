@@ -4,7 +4,7 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
-from torch.nn.utils.rnn import pack_padded_sequence
+# from torch.nn.utils.rnn import pack_padded_sequence
 from torch.autograd import Variable
 
 class DecoderRNN(nn.Module):
@@ -22,17 +22,17 @@ class DecoderRNN(nn.Module):
         self.linear.weight.data.uniform_(-0.1, 0.1)
         self.linear.bias.data.fill_(0)
         
-    def forward(self, features, captions, lengths):
-        """Decode image feature vectors and generates captions."""
-        embeddings = self.embed(captions)
+    def forward(self, features, data):
+        """Auto-encode RRM sequence vectors."""
+        embeddings = self.embed(data)
         embeddings = torch.cat((features.unsqueeze(1), embeddings), 1)
-        packed = pack_padded_sequence(embeddings, lengths, batch_first=True) 
-        hiddens, _ = self.lstm(packed)
+        # packed = pack_padded_sequence(embeddings, lengths, batch_first=True) 
+        hiddens, _ = self.lstm(embeddings)
         outputs = self.linear(hiddens[0])
         return outputs
     
     def sample(self, features, states=None):
-        """Samples captions for given image features (Greedy search)."""
+        """Samples reconstructed RRM sequences for given features (Greedy search)."""
         sampled_ids = []
         inputs = features.unsqueeze(1)
         for i in range(20):                                      # maximum sampling length

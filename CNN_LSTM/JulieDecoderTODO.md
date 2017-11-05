@@ -1,9 +1,7 @@
 ## train\_decoder.py
-Replace data\_loader and for loop that iterates over training data
+Add command line option to control whether to use aligned or unaligned sequences?
 
-Clean up code, comments
-
-Eventually, integrate with CNN encoder --> Currently using dummy features to feed into LSTM
+Integrate with Shasha's CNN encoder --> Currently using dummy features to feed into LSTM
 
 Use a validation set to do any hyperparameter tuning --> See below
 
