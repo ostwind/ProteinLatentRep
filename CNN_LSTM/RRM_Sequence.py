@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset #, DataLoader
 
 
 class RRM_AlignedSequence(Dataset):
 
-    """RRM dataset without one-hot encoding"""
+    """RRM dataset without one-hot encoding and with alignment"""
 
     def __init__(self, indices, info_path = '../data/rrm_rp55_info.csv'):
         """
@@ -14,7 +14,7 @@ class RRM_AlignedSequence(Dataset):
             info_path (string): path for filtered RRM sequence csv file
             names (list of strings): RRM sequences to include
         """
-        super(RRM_Sequence).__init__()
+        super(RRM_AlignedSequence).__init__()
         self.names = indices
         self.df = pd.read_csv(info_path, index_col=0)
 
@@ -32,17 +32,17 @@ class RRM_AlignedSequence(Dataset):
 
 class RRM_OriginalSequence(Dataset):
 
-    """RRM dataset without one-hot encoding"""
+    """RRM dataset without one-hot encoding and without alignment"""
 
     def __init__(self, indices, raw_txt_path = '../data/PF00076_rp55-2.txt'):
         """
         Args:
-            info_path (string): path for filtered RRM sequence csv file
+            raw_txt_path (string): path for original RRM sequence txt file
             names (list of strings): RRM sequences to include
         """
-        super(RRM_Sequence).__init__()
+        super(RRM_OriginalSequence).__init__()
         self.names = indices
-        self.df = _parse_input(raw_txt_path)
+        self.df = self._parse_input(raw_txt_path)
 
     def __len__(self):
         # this could potentially be replaced by gene ID's 
@@ -77,12 +77,3 @@ class RRM_OriginalSequence(Dataset):
         df = pd.DataFrame(list(dic.values()), index=dic.keys())
 
         return df 
-
-
-
-
-
-
-
-
-
