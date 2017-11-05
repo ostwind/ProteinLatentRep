@@ -1,4 +1,4 @@
-# Build vocabulary list of amino acids for LSTM decoder
+# Build vocabulary list of amino acids for CNN+LSTM autoencoder architecture
 # Adapted from https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/03-advanced/image_captioning/build_vocab.py
 
 import argparse
@@ -32,8 +32,7 @@ class Vocabulary(object):
 
 def build_vocab(df):
 
-    """Builds vocabulary of amino acids that appear 
-    in csv at csv_path"""
+    """Builds vocabulary of amino acids that appear in dataframe"""
     
     print('Building vocabulary of amino acids...')
     
@@ -42,10 +41,11 @@ def build_vocab(df):
     
     # Add words from RRM sequences
     for word in df.values.flat: 
-    # Each "word" is a single amino acid
+    # Each "word" is a single amino acid (or gap)
         vocab.add_word(word)
     
     # Add special tokens
     vocab.add_word('<start>')
     vocab.add_word('<end>')
+    
     return vocab
