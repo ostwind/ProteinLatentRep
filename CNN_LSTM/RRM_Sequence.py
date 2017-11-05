@@ -1,11 +1,42 @@
+import os
 import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset #, DataLoader
 
+class RRM_Dataset(Dataset):
+    """One hot encoded RRM dataset"""
+
+    def __init__(self, indices, root_dir='../data', transform=None):
+        """
+        Args:
+            csv_file (string): directory of csv file with all RRM sequences.
+            root_dir (string): directory with all the csv file for
+            individual RRM csv.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+        """
+        super(RRM_Dataset).__init__()
+        self.root_dir = root_dir
+        self.names = indices
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.names)
+
+    def __getitem__(self, idx):
+        rrm_name = self.names[idx]
+        rrm_path = os.path.join(self.root_dir, self.names[idx]+'.csv')
+        rrm = pd.read_csv(rrm_path, index_col=0).as_matrix().astype('float')
+        rrm = torch.from_numpy(rrm).contiguous().float()
+        sample = {'name': rrm_name, 'seq': rrm}
+
+        if self.transform:
+            sample = self.transform(sample)
+
+        return sample
 
 class RRM_AlignedSequence(Dataset):
-
     """RRM dataset without one-hot encoding and with alignment"""
 
     def __init__(self, indices, info_path = '../data/rrm_rp55_info.csv'):
@@ -31,7 +62,6 @@ class RRM_AlignedSequence(Dataset):
         return sample
 
 class RRM_OriginalSequence(Dataset):
-
     """RRM dataset without one-hot encoding and without alignment"""
 
     def __init__(self, indices, raw_txt_path = '../data/PF00076_rp55-2.txt'):
