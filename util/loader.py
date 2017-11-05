@@ -2,7 +2,7 @@
     instantiates a pytorch loader according to input parameters
 '''
 from torch.utils.data import TensorDataset, DataLoader
-from preprocessing import *
+from util.preprocessing import *
 
 def loader( batch_size = 64, shuffle = True,
 data_pickle_path = "data.p", name_pickle_path = "names.p"):
@@ -21,7 +21,7 @@ data_pickle_path = "data.p", name_pickle_path = "names.p"):
     return loader
 
 if __name__ == "__main__":
-    print('f')
-    for data, label in loader():
-        pass
-        #print(data.shape, label.shape)
+    preprocess()
+    # for data, label in loader():
+    #    print(data, label)
+    
