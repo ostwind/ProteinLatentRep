@@ -38,7 +38,7 @@ def plot(plot_name, labels, latent_representation, take_first_n = 2000):
             plt.scatter(
                   tsne_projection[all_l_indices,0], 
                   tsne_projection[all_l_indices,1], 
-                  c= cur_color, label=l, s = 4)
+                  c= cur_color, label=l, s = 5)
             i += 1
       plt.legend()
       ax = plt.gca()

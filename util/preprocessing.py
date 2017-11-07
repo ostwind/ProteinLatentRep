@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from util.tsne import hist
 
 #TODO parse fasta, etc. formats beyond .txt
-def txt_to_csv(raw_txt_path, csv_path, position_ind = None, sample_ind = None):
+def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
     keys = []
     vals = []
     with open(raw_txt_path) as RRM:
@@ -44,9 +44,10 @@ def txt_to_csv(raw_txt_path, csv_path, position_ind = None, sample_ind = None):
 
     if sample_ind: # if position + sample filtered, write fasta version for Seq2Vec
         write_fasta(vals, keys, fasta_name = './data/RRM_55_sample_position_filtered.fasta')
-        print(len(vals))
+        print(len(vals), ' samples made it')
 
     df = pd.DataFrame({'keys': keys, 'vals': vals})
+    
     # write df if it dosen't fit in RAM 
     return df
 
@@ -93,34 +94,36 @@ def _filter_samples(df, plot = False):
 
     return keep_sample_ind  
 
-def one_hot_pickle(df):
-    seq_list = df['vals'].tolist()
-    name_list = df['keys'].tolist()
+def one_hot_pickle(df2):
+    seq_list = df2['vals'].tolist()
+    name_list = df2['keys'].tolist()
 
     label_encoder = LabelEncoder()
     #onehot_encoder = OneHotEncoder(sparse=False)
     dataset = []
-    for index in range(len(seq_list)):
-        values = np.array(list(seq_list[index]))
+    for index, seq in enumerate(seq_list):
+        values = np.array(list(seq))
         integer_encoded = label_encoder.fit_transform(values)
         #onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
         #print('integer encoded sequence shape: %s' %(integer_encoded.shape))
         dataset.append(integer_encoded)
         #print(integer_encoded)
 
-    pickle.dump( np.array(dataset), open( "data.p", "wb" ) )
-    pickle.dump( np.array(name_list), open( "names.p", "wb" ) )
+    pickle.dump( np.array(dataset), open( "./data/data.p", "wb" ) )
+    pickle.dump( np.array(name_list), open( "./data/names.p", "wb" ) )
 
 def preprocess(raw_txt_path = './data/PF00076_rp55.fasta'):
     assert os.path.isfile(raw_txt_path), '%s not found!' %(raw_txt_path)
-    csv_path = '../data/rrm_rp55.csv'
-    #informative_csv_path = '../data/rrm_rp55_condensed.csv'
-
-    df = txt_to_csv(raw_txt_path, csv_path) # first convert to csv
+    
+    df = txt_to_csv(raw_txt_path, ) # first convert to csv
     #filter empty positions then re-write csv to informative_csv_path
-    df = txt_to_csv(raw_txt_path, csv_path, _filter_positions(df))
-    df = txt_to_csv(raw_txt_path, csv_path, position_ind = None,
-    sample_ind = _filter_samples(df),
-    )
+    
+    position_ind = _filter_positions(df)
+    df1 = txt_to_csv(raw_txt_path,  position_ind = position_ind)
 
-    one_hot_pickle(df)
+    sample_ind = _filter_samples(df1)
+
+    df2 = txt_to_csv(raw_txt_path, position_ind = position_ind,
+    sample_ind = sample_ind,
+    )
+    one_hot_pickle(df2)
