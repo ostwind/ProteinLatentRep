@@ -2,39 +2,39 @@ from torch import nn
 
 class Bottleneck(nn.Module):
 
-	expansion = 4
-	# output plane/ input plane
+    expansion = 4
+    # output plane/ input plane
 
-	def __init__(self, inplanes, planes):
-		super(Bottleneck, self).__init__()
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(Bottleneck, self).__init__()
 
-		# (W - F + 2P)/S + 1
-		# http://cs231n.github.io/convolutional-networks/
+        # if stride == 1: no reduction in dimension
+        # if stride == 2: divivde dimsnion by 2
+        self.downsample = downsample
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1,
+            bias=False) # initial input 74*66
+        # this is a bottleneck layer that reduces no. of planes/channels
+        self.bn1 = nn.BatchNorm2d(planes)
 
-		# each bottleneck module reduces height by 4,
-		# while keeping width as 1
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=(3, 3), stride=stride, 
+            padding=(1, 1), bias=False) 
+        
+        self.bn2 = nn.BatchNorm2d(planes)
 
-		self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, 
-			bias=False) # initial input size 74*1
-		# this is a bottleneck layer that reduces no. of planes/channels
-		self.bn1 = nn.BatchNorm2d(planes)
-
-		self.conv2 = nn.Conv2d(planes, planes, kernel_size=(5, 1), 
-			stride=(1, 1), padding=(0, 0), bias=False) 
-			# first run: 70*1
-		self.bn2 = nn.BatchNorm2d(planes)
-
-		self.conv3 = nn.Conv2d(planes, planes * 4, 
-			kernel_size=1, bias=False) # 72*1
-		self.bn3 = nn.BatchNorm2d(planes * 4)
+        self.conv3 = nn.Conv2d(planes, planes * 4, 
+            kernel_size=1, bias=False) 
+        self.bn3 = nn.BatchNorm2d(planes * 4)
         self.relu = nn.ReLU(inplace=True)
         # the second bottleneck, expanding the no. of planes
 
-	def forward(self, x):
+        self.lin = nn.Linear()
 
-		residual = x
 
-		out = self.conv1(x)
+    def forward(self, x):
+
+        residual = x
+
+        out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
 
@@ -45,43 +45,57 @@ class Bottleneck(nn.Module):
         out = self.conv3(out)
         out = self.bn3(out)
 
+        if self.downsample:
+            residual = self.downsample(x)
+
         out += residual
         out = self.relu(out)
 
         return out
 
 
-class ResNetEncoder(nn.Module)
+class ResNetEncoder(nn.Module):
 
-	def __init__(self):
-		super(ResNetEncoder, self).__init__()
+    def __init__(self, vocab_size, emb_size, expansion=4):
+        super(ResNetEncoder, self).__init__()
 
-		self.inplanes = 32
+        self.inplanes = 32
+        self.emb = nn.Embedding(vocab_size, emb_size) 
+        # initial regular conv layers
 
-		# initial regular conv layers
-		self.conv1 = nn.Conv2d(1, 8, kernel_size=(3,2), stride=(1, 2), 
-			padding=(0, 0), bias=False) # raw input is 82*22 --> 80*11
-		self.bn1 = nn.BatchNorm2d(8)
-		self.relu = nn.ReLu(inplace=True)
-		self.maxpool1 = nn.MaxPool2d(kernel_size=(3,3), stride=(1, 2),
-			padding=(0, 0), bias=False) # 78*5
+        # (W - F + 2P)/S + 1
+        # http://cs231n.github.io/convolutional-networks/
 
-		self.conv2 = nn.Conv2d(8, 32, kernel_size=(3,3), stride=(1, 1), 
-			padding=(0, 0), bias=False) # 76*3
-		self.bn2 = nn.BatchNorm2d(32)
-		self.maxpool2 = nn.MaxPool2d(kernel_size=(3, 3), stride=(1, 1),
-			bias=False) # 74*1
+        self.conv1 = nn.Conv2d(1, 8, kernel_size=(3,2), stride=(1, 2), 
+            padding=(0, 0), bias=False) # raw input is 80*64 
+        self.bn1 = nn.BatchNorm2d(8)
+        self.relu = nn.ReLu(inplace=True)
+        self.maxpool1 = nn.MaxPool2d(kernel_size=(3,2), stride=(1, 1),
+            padding=(0, 1), bias=False) # 78*65
 
-		# blocks of bottleneck layers
-		self.block1 = self._make_layer(Bottleneck, 32, 3)
-		self.block2 = self._make_layer(Bottleneck, 64, 4)
-		self.block2 = self._make_layer(Bottleneck, 128, 6)
-		self.block2 = self._make_layer(Bottleneck, 256, 3)
+        self.conv2 = nn.Conv2d(8, 32, kernel_size=(3,2), stride=(1, 1), 
+            padding=(0, 1), bias=False) # 76*66
+        self.bn2 = nn.BatchNorm2d(32)
+        self.maxpool2 = nn.MaxPool2d(kernel_size=(3, 1), stride=(1, 1),
+            padding=(0, 0), bias=False) # 74*66
 
-		self.avgpool = nn.AvgPool2d(kernel_size=(3, 1), stride=1)
+        # blocks of bottleneck layers
+        self.block1 = self._make_layer(Bottleneck, 32, 3)
+        self.block2 = self._make_layer(Bottleneck, 64, 4, stide=2)
+        self.block3 = self._make_layer(Bottleneck, 128, 6, stide=2)
+        self.block4 = self._make_layer(Bottleneck, 256, 3, stide=2)
 
-		# initialize original params
-		for m in self.modules():
+        # 10*9
+
+        self.avgpool = nn.AvgPool2d(kernel_size=(5, 5), stride=1)
+
+        # 6*5
+
+        self.lin = nn.Linear(256*expansion, emb_size)
+        self.bn = nn.BatchNorm1d(embed_size, momentum=0.01)
+
+        # initialize original params
+        for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
@@ -89,11 +103,17 @@ class ResNetEncoder(nn.Module)
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-	def _make_layer(self, block, planes, blocks):
+    def _make_layer(self, block, planes, blocks, stride=1):
 
-		layers = []
-        layers.append(block(self.inplanes, planes))
+        downsample = None
+        if stride != 1 or self.inplanes != planes*block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(self.inplanes, planes*block.expansion,
+                    kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(planes*block.expansion))
 
+        layers = []
+        layers.append(block(self.inplanes, planes, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes))
@@ -112,13 +132,14 @@ class ResNetEncoder(nn.Module)
         x = self.maxpool2(x)
 
 
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        x = self.block1(x)
+        x = self.block2(x)
+        x = self.block3(x)
+        # x = self.block4(x)
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
+        x = self.bn(self.lin(x))
 
         return x
 
