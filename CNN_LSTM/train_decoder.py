@@ -75,7 +75,7 @@ def main(args):
             # Print log info
             if batch_idx % args.log_step == 0:
                 print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f'
-                      %(epoch, args.num_epochs, i, total_step, 
+                      %(epoch, args.num_epochs, batch_idx, total_step, 
                         loss.data[0], np.exp(loss.data[0]))) 
                 
             # Save the models
