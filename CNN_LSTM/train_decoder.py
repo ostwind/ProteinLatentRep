@@ -9,8 +9,7 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
-# from torch.nn.utils.rnn import pack_padded_sequence
-# from build_vocab import Vocabulary  
+from torch.nn.utils.rnn import pack_padded_sequence
 from preprocessing import preprocess
 from decoder import DecoderRNN
 from EncoderCNN import ResNetEncoder
@@ -44,7 +43,7 @@ def main(args):
     decoder = DecoderRNN(args.embed_size, args.hidden_size, 
                          len(vocab), args.num_layers)
     
-    if args.cuda:
+    if torch.cuda.is_available():
         encoder.cuda()
         decoder.cuda()
 
@@ -58,38 +57,38 @@ def main(args):
         for batch_idx, (names, rrms_aligned, rrms_unaligned, lengths) in enumerate(train_loader):
             
             # Set mini-batch dataset
-            rrms_aligned = to_var(rrms_aligned, volatile=True) 
+            rrms_aligned = to_var(rrms_aligned) 
+            rrms_unaligned = to_var(rrms_unaligned)
             targets = pack_padded_sequence(rrms_unaligned, lengths, batch_first=True)[0]
+            
             
             # Forward, backward, and optimize
             decoder.zero_grad()
             encoder.zero_grad()
             features = encoder(rrms_aligned) 
+
             outputs = decoder(features, rrms_unaligned, lengths)
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
 
             # Print log info
-            if i % args.log_step == 0:
+            if batch_idx % args.log_step == 0:
                 print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f'
                       %(epoch, args.num_epochs, i, total_step, 
                         loss.data[0], np.exp(loss.data[0]))) 
                 
             # Save the models
-            if (i+1) % args.save_step == 0:
+            if (batch_idx+1) % args.save_step == 0:
                 torch.save(decoder.state_dict(), 
                            os.path.join(args.model_path, 
-                                        'decoder-%d-%d.pkl' %(epoch+1, i+1)))
-#                 torch.save(encoder.state_dict(), 
-#                            os.path.join(args.model_path, 
-#                                         'encoder-%d-%d.pkl' %(epoch+1, i+1)))
+                                        'decoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
+                torch.save(encoder.state_dict(), 
+                           os.path.join(args.model_path, 
+                                        'encoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    
-    parser.add_argument('--no-cuda', action='store_true', default=True,
-                        help='disables CUDA training')
 
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')    
@@ -129,9 +128,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
     torch.manual_seed(args.seed)
-    if args.cuda:
+    if torch.cuda.is_available():
         torch.cuda.manual_seed(args.seed)
 
     main(args)

@@ -13,7 +13,7 @@ from build_vocab import build_vocab
 from sklearn.preprocessing import LabelEncoder
 
 
-def txt_to_csv(raw_txt_path, sep=None, processed_RRM_path='../data/processed.csv'):
+def txt_to_csv(raw_txt_path, sep=None):
 
     """parses txt file or fasta file into csv
     info_positions: list of positions populated beyond a threshold"""
@@ -33,11 +33,10 @@ def txt_to_csv(raw_txt_path, sep=None, processed_RRM_path='../data/processed.csv
 
         df = pd.DataFrame(list(map(lambda x: list(x.upper()), 
             list(dic.values()))), index=dic.keys())
-    df.to_csv(processed_RRM_path)
     return df
 
 
-def informative_positions(df, top_n=82, placeholder='-'):
+def informative_positions(df, processed_RRM_path='../data/processed.csv', top_n=82, placeholder='-'):
 
     """rid of excessive placeholders, 
     keeping top_n most populated positions
@@ -51,17 +50,19 @@ def informative_positions(df, top_n=82, placeholder='-'):
     if rate in sorted(populate_rate, reverse=True)[:top_n]]
     informative_values = list(map(lambda x: ['<start>'] + x.tolist() + ['<end>'], 
         df[positions_to_keep].values))
-    return pd.DataFrame(informative_values, index=df.index)
+    df1 = pd.DataFrame(informative_values, index=df.index)
+    df1.to_csv(processed_RRM_path)
+    return df1
 
 def preprocess(preprocessed=False, RRM_path='../data/PF00076_rp55.txt', 
     output_path='../data/processed_RRM.csv'):
     """if aligned=False, a vocab should be passed"""
     
     assert os.path.isfile(RRM_path), 'input RRM path: %s not found!' %(RRM_path)
-    df = pd.read_csv(RRM_path)
+    df = pd.read_csv(RRM_path, index_col=0)
     if not preprocessed:
-            df = txt_to_csv(RRM_path, processed_RRM_path=output_path)
-            df = informative_positions(df)
+            df = txt_to_csv(RRM_path)
+            df = informative_positions(df, processed_RRM_path=output_path)
     vocab = build_vocab(df)
     
     return vocab, df

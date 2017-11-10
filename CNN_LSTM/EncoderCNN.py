@@ -1,4 +1,5 @@
 from torch import nn
+import math
 
 class Bottleneck(nn.Module):
 
@@ -9,7 +10,8 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
 
         # if stride == 1: no reduction in dimension
-        # if stride == 2: divivde dimsnion by 2
+        # if stride == 2: divivde dimension by 2
+
         self.downsample = downsample
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1,
             bias=False) # initial input 74*66
@@ -27,7 +29,6 @@ class Bottleneck(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         # the second bottleneck, expanding the no. of planes
 
-        self.lin = nn.Linear()
 
 
     def forward(self, x):
@@ -69,30 +70,30 @@ class ResNetEncoder(nn.Module):
         self.conv1 = nn.Conv2d(1, 8, kernel_size=(3,2), stride=(1, 2), 
             padding=(0, 0), bias=False) # raw input is 80*64 
         self.bn1 = nn.BatchNorm2d(8)
-        self.relu = nn.ReLu(inplace=True)
+        self.relu = nn.ReLU(inplace=True)
         self.maxpool1 = nn.MaxPool2d(kernel_size=(3,2), stride=(1, 1),
-            padding=(0, 1), bias=False) # 78*65
+            padding=(0, 1)) # 78*65
 
         self.conv2 = nn.Conv2d(8, 32, kernel_size=(3,2), stride=(1, 1), 
             padding=(0, 1), bias=False) # 76*66
         self.bn2 = nn.BatchNorm2d(32)
         self.maxpool2 = nn.MaxPool2d(kernel_size=(3, 1), stride=(1, 1),
-            padding=(0, 0), bias=False) # 74*66
+            padding=(0, 0)) # 74*66
 
         # blocks of bottleneck layers
         self.block1 = self._make_layer(Bottleneck, 32, 3)
-        self.block2 = self._make_layer(Bottleneck, 64, 4, stide=2)
-        self.block3 = self._make_layer(Bottleneck, 128, 6, stide=2)
-        self.block4 = self._make_layer(Bottleneck, 256, 3, stide=2)
+        self.block2 = self._make_layer(Bottleneck, 64, 4, stride=2)
+        self.block3 = self._make_layer(Bottleneck, 128, 6, stride=2)
+        self.block4 = self._make_layer(Bottleneck, 256, 3, stride=2)
 
-        # 10*9
+        # 19*17
 
         self.avgpool = nn.AvgPool2d(kernel_size=(5, 5), stride=1)
 
-        # 6*5
+        # 15*13
 
-        self.lin = nn.Linear(256*expansion, emb_size)
-        self.bn = nn.BatchNorm1d(embed_size, momentum=0.01)
+        self.lin = nn.Linear(512*195, emb_size)
+        self.bn = nn.BatchNorm1d(emb_size, momentum=0.01)
 
         # initialize original params
         for m in self.modules():
@@ -121,23 +122,32 @@ class ResNetEncoder(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        x = self.emb(x).unsqueeze(1)
+        # print(x.size())
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool1(x)
+        # print(x.size())
 
         x = self.conv2(x)
+        # print(x.size())
         x = self.bn2(x)
         x = self.relu(x)
         x = self.maxpool2(x)
+        # print(x.size())
 
 
         x = self.block1(x)
+        # print(x.size())
         x = self.block2(x)
+        # print(x.size())
         x = self.block3(x)
+        # print(x.size())
         # x = self.block4(x)
 
         x = self.avgpool(x)
+        # print(x.size())
         x = x.view(x.size(0), -1)
         x = self.bn(self.lin(x))
 
