@@ -9,7 +9,7 @@ def tsne(matrix,
             n_components= n_components, verbose=1, perplexity=perplexity, n_iter=n_iter)
       return tsne.fit_transform(matrix)
 
-def plot(plot_name, labels, latent_representation, take_first_n = 2000): 
+def plot(plot_name, labels, latent_representation, take_first_n = 10000): 
       ''' list int, str labels: color point according to this color 
           np.ndarray tsne_projection: [ Num of sequences X Dim of Latent Rep. ]
           take_first_n: only first n row will show in tsne projection 
@@ -29,17 +29,24 @@ def plot(plot_name, labels, latent_representation, take_first_n = 2000):
       unique_labels = sorted(list(set(labels)))
       colors = [ unique_labels.index(l) for l in labels]
       
-      colors = iter(cm.rainbow(np.linspace(0, 1, len(unique_labels))))
-      i = 0
 
+      large_gene_symbol = []
+      unique_labels_filtered = []
       for l in unique_labels: 
-            all_l_indices = [i for i,x in enumerate(labels) if x == l]  
+            all_l_indices = [i for i,x in enumerate(labels) if x == l]
+            if len(all_l_indices) < 40:
+                  continue  
+            large_gene_symbol.append(all_l_indices)
+            unique_labels_filtered.append(l)
+
+      colors = iter(cm.jet(np.linspace(0, 1, len(large_gene_symbol))))
+      for l, all_l_indices in zip(unique_labels_filtered, large_gene_symbol):
             cur_color = next(colors)
             plt.scatter(
                   tsne_projection[all_l_indices,0], 
                   tsne_projection[all_l_indices,1], 
                   c= cur_color, label=l, s = 5)
-            i += 1
+
       plt.legend()
       ax = plt.gca()
       #legend = ax.get_legend()

@@ -51,7 +51,7 @@ def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
     # write df if it dosen't fit in RAM 
     return df
 
-def _filter_positions(df, threshold = 0.01, plot=False):
+def _filter_positions(df, threshold = 0.01, plot=True):
     seq_list = df['vals'].tolist()
     keep_pos_ind = []
     position_occupancies = []
@@ -71,11 +71,11 @@ def _filter_positions(df, threshold = 0.01, plot=False):
             keep_pos_ind.append(0)
     
     if plot:
-        hist('Position Occupancies by Percentage', position_occupancies)
+        hist('Percentage of Non-Gap Symbols by Position', position_occupancies)
 
     return keep_pos_ind
 
-def _filter_samples(df, plot = False):
+def _filter_samples(df, plot = True):
     seq_list = df['vals'].tolist()
     sample_occupancies =[]
     keep_sample_ind = []
@@ -90,7 +90,7 @@ def _filter_samples(df, plot = False):
             keep_sample_ind.append(0)
 
     if plot:
-        hist('Sample Occupancies by Percentage', sample_occupancies)
+        hist('Percentage of Non-Gap Symbols by Sample', sample_occupancies)
 
     return keep_sample_ind  
 
