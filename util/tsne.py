@@ -54,7 +54,9 @@ def plot3d(plot_name, labels, latent_representation, take_first_n = 10000):
       ax.legend()
       #ax = plt.gca()
       #legend = ax.get_legend()
-      
+      # ax.set_zlim(-10, 10)
+      # ax.set_ylim(-10, 10)
+      # ax.set_xlim(-10, 10)
       plt.savefig(plot_name, bbox_inches='tight')
       plt.show()
 

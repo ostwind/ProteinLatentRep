@@ -1,7 +1,7 @@
 from CharAE_Cho import * 
 
 class rnn_encoder(nn.Module):
-    def __init__(self, input_size = 81, hidden_size = 320, n_layers=1):
+    def __init__(self, input_size = 81, hidden_size = 80, n_layers=1):
         super(rnn_encoder, self).__init__()
         self.n_layers = n_layers
         self.hidden_size = hidden_size
@@ -24,7 +24,7 @@ class cnn_encoder(nn.Module):
         super(cnn_encoder, self).__init__()
         self.filter_size_range = list(range(2, 10))
         self.char_embedding_dim = 128
-        self.num_w_wide_filters = 40  #8*40 = 320
+        self.num_w_wide_filters = 10  #8*10 = 80
         # 1 conv layer with dynamic padding 
         # this enable kernels with varying widths a la Cho's NMT (2017) 
         self.filter_banks = [] 

@@ -2,7 +2,7 @@ from CharAE_Cho import *
 import torch.nn.functional as F
 
 class AttnDecoderRNN(nn.Module):
-    def __init__(self, output_size,hidden_size = 320, n_layers=1, dropout_p=0.6,):
+    def __init__(self, output_size,hidden_size = 80, n_layers=1, dropout_p=0.6,):
         super(AttnDecoderRNN, self).__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size

@@ -3,8 +3,6 @@ from encoder import cnn_encoder, rnn_encoder
 from decoder import cnn_decoder, AttnDecoderRNN, DecoderRNN
 
 #TODO differences between cho's paper and current implementation, in order of importance
-#     parameters and loader currently fitted for protein sequences
-#     no segmentation of activation matrix, i.e. no max pooling
 #     no highway network
 #     gru not bidirectional
 
@@ -15,10 +13,10 @@ class CharLevel_autoencoder(nn.Module):
             self.cnn_encoder = cnn_encoder()
             self.rnn_encoder = rnn_encoder()
 
-            self.decoder_hidden_size = 320
+            self.decoder_hidden_size = 80
             self.decoder_embedding = nn.Embedding(22, self.decoder_hidden_size)
-            self.vanilla_decoder = DecoderRNN() 
-            self.attention_decoder = AttnDecoderRNN(hidden_size = 320, output_size = 0)
+            self.attention_decoder = AttnDecoderRNN(
+                  hidden_size = decoder_hidden_size, output_size = 0)
             self.criterion = criterion
 
             self.seq_len = 27
@@ -79,7 +77,7 @@ class cnn_autoencoder(nn.Module):
             self.decoder = cnn_decoder()
             # possible symbols, dimension of vector representation for given symbo
             # TODO verify total number of symbols (20 + '_' + ?) 
-            self.embedding = nn.Embedding(23, 4)
+            self.embedding = nn.Embedding(22, 4)
             
       def encode(self, data):
             char_embeddings = self.embedding(data).unsqueeze(1).transpose(2,3) 
