@@ -1,4 +1,4 @@
-from CNN_LSTM import * 
+from CharAE_Cho import * 
 
 class rnn_encoder(nn.Module):
     def __init__(self, input_size = 81, hidden_size = 320, n_layers=1):
@@ -22,7 +22,6 @@ class rnn_encoder(nn.Module):
 class cnn_encoder(nn.Module):
     def __init__(self):
         super(cnn_encoder, self).__init__()
-        
         self.filter_size_range = list(range(2, 10))
         self.char_embedding_dim = 128
         self.num_w_wide_filters = 40  #8*40 = 320
@@ -58,9 +57,9 @@ class cnn_encoder(nn.Module):
 
             #print('convolved width %s kernels for activations in shape %s' %(k, activations.data.shape) )
             
-            #activations = activations.squeeze(2)
-            #activations, unpool_indices = self.pool(activations)
-            #activations = activations.unsqueeze(2)
+            activations = activations.squeeze(2)
+            activations, unpool_indices = self.pool(activations)
+            activations = activations.unsqueeze(2)
             #all_unpool_indices.append(unpool_indices)
 
             all_activations.append(activations)

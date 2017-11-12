@@ -1,4 +1,4 @@
-from CNN_LSTM import *
+from CharAE_Cho import *
 from encoder import cnn_encoder, rnn_encoder
 from decoder import cnn_decoder, AttnDecoderRNN, DecoderRNN
 
@@ -15,19 +15,17 @@ class CharLevel_autoencoder(nn.Module):
             self.cnn_encoder = cnn_encoder()
             self.rnn_encoder = rnn_encoder()
 
-
             self.decoder_hidden_size = 320
             self.decoder_embedding = nn.Embedding(22, self.decoder_hidden_size)
             self.vanilla_decoder = DecoderRNN() 
             self.attention_decoder = AttnDecoderRNN(hidden_size = 320, output_size = 0)
             self.criterion = criterion
 
-            self.seq_len = 81
+            self.seq_len = 27
 
       def encode(self, data):
             encoder_embedded = self.encoder_embedding(data).unsqueeze(1).transpose(2,3) 
             encoded = self.cnn_encoder.forward(encoder_embedded)
-            #print(encoded.data.shape)
             encoded = encoded.squeeze(2)
             #highway
             
@@ -38,7 +36,7 @@ class CharLevel_autoencoder(nn.Module):
             # store encoder outputs as they appear or store seq_len of them on last t?
             #outputs = Variable(torch.zeros(self.seq_len, 25))
 
-            encoder_outputs = Variable(torch.zeros(64, 81, self.decoder_hidden_size))
+            encoder_outputs = Variable(torch.zeros(64, self.seq_len, self.decoder_hidden_size))
             for symbol_ind in range(self.seq_len): 
                   output, encoder_hidden = self.rnn_encoder.forward(
                         encoded[:,:,symbol_ind], encoder_hidden)

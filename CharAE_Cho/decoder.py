@@ -1,4 +1,4 @@
-from CNN_LSTM import *
+from CharAE_Cho import *
 import torch.nn.functional as F
 
 class AttnDecoderRNN(nn.Module):
@@ -9,7 +9,7 @@ class AttnDecoderRNN(nn.Module):
         self.n_layers = n_layers
         self.dropout_p = dropout_p
         
-        self.attn = nn.Linear(2*hidden_size, 81)
+        self.attn = nn.Linear(2*hidden_size, 27)
         self.attn_combine = nn.Linear(2*hidden_size, hidden_size)
         self.dropout = nn.Dropout(self.dropout_p)
         self.gru = nn.GRU(hidden_size, hidden_size,)#  bidirectional = True)
