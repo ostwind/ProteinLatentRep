@@ -50,19 +50,32 @@ def main(args):
 
     # Define the loss and optimizer
     criterion = nn.CrossEntropyLoss()
-    params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
+    params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters()) # TODO
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
     
+    # Define the validation loss
+    def validate(val_loader, encoder, decoder, criterion):
+        for batch_idx, (names, rrms_aligned, rrms_unaligned, lengths) in enumerate(val_loader):
+            rrms_aligned = to_var(rrms_aligned) 
+            rrms_unaligned = to_var(rrms_unaligned)
+            targets = pack_padded_sequence(rrms_unaligned, lengths, batch_first=True)[0]
+
+            # Get outputs for validation data
+            features = encoder(rrms_aligned)
+            outputs = decoder(features, rrms_unaligned, lengths)
+
+            # Return loss according to given criterion
+            loss = criterion(outputs, targets)
+            return loss.data[0]
+        
     # Train the models
     total_step = len(train_loader)
     for epoch in range(args.num_epochs):
         for batch_idx, (names, rrms_aligned, rrms_unaligned, lengths) in enumerate(train_loader):
-            # Set mini-batch dataset
             rrms_aligned = to_var(rrms_aligned) 
             rrms_unaligned = to_var(rrms_unaligned)
             targets = pack_padded_sequence(rrms_unaligned, lengths, batch_first=True)[0]
-            
-            
+                        
             # Forward, backward, and optimize
             decoder.zero_grad()
             encoder.zero_grad()
@@ -74,9 +87,9 @@ def main(args):
 
             # Print log info
             if batch_idx % args.log_step == 0:
-                print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f'
+                print('Epoch [%d/%d], Step [%d/%d], Training Loss: %.4f'
                       %(epoch, args.num_epochs, batch_idx, total_step, 
-                        loss.data[0], np.exp(loss.data[0]))) 
+                        loss.data[0])) 
                 
             # Save the models
             if (batch_idx+1) % args.save_step == 0:
@@ -86,6 +99,12 @@ def main(args):
                 torch.save(encoder.state_dict(), 
                            os.path.join(args.model_path, 
                                         'encoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
+                
+        # Evaluate on validation set after every epoch
+        valid_loss = validate(val_loader, encoder, decoder, criterion)
+        print('Epoch [%d/%d], Validation Loss: %.4f'
+              %(epoch, args.num_epochs, batch_idx, total_step, 
+                valid_loss))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
