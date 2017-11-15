@@ -14,6 +14,7 @@ from preprocessing import preprocess
 from decoder import DecoderRNN
 from EncoderCNN import ResNetEncoder
 from RRM_Sequence import RRM_Sequence, collate_fn
+from early_stopping import validate, early_stop
 
 def to_var(x, volatile=False):
     if torch.cuda.is_available():
@@ -52,24 +53,10 @@ def main(args):
     criterion = nn.CrossEntropyLoss()
     params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters()) # TODO
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
-    
-    # Define the validation loss
-    def validate(val_loader, encoder, decoder, criterion):
-        for batch_idx, (names, rrms_aligned, rrms_unaligned, lengths) in enumerate(val_loader):
-            rrms_aligned = to_var(rrms_aligned) 
-            rrms_unaligned = to_var(rrms_unaligned)
-            targets = pack_padded_sequence(rrms_unaligned, lengths, batch_first=True)[0]
-
-            # Get outputs for validation data
-            features = encoder(rrms_aligned)
-            outputs = decoder(features, rrms_unaligned, lengths)
-
-            # Return loss according to given criterion
-            loss = criterion(outputs, targets)
-            return loss.data[0]
-        
+            
     # Train the models
     total_step = len(train_loader)
+    valid_loss = float("inf")
     for epoch in range(args.num_epochs):
         for batch_idx, (names, rrms_aligned, rrms_unaligned, lengths) in enumerate(train_loader):
             rrms_aligned = to_var(rrms_aligned) 
@@ -88,23 +75,31 @@ def main(args):
             # Print log info
             if batch_idx % args.log_step == 0:
                 print('Epoch [%d/%d], Step [%d/%d], Training Loss: %.4f'
-                      %(epoch, args.num_epochs, batch_idx, total_step, 
+                      %(epoch+1, args.num_epochs, batch_idx+1, total_step, 
                         loss.data[0])) 
                 
             # Save the models
             if (batch_idx+1) % args.save_step == 0:
                 torch.save(decoder.state_dict(), 
-                           os.path.join(args.model_path, 
+                            os.path.join(args.model_path, 
                                         'decoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
                 torch.save(encoder.state_dict(), 
-                           os.path.join(args.model_path, 
+                            os.path.join(args.model_path, 
                                         'encoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
                 
-        # Evaluate on validation set after every epoch
-        valid_loss = validate(val_loader, encoder, decoder, criterion)
-        print('Epoch [%d/%d], Validation Loss: %.4f'
-              %(epoch, args.num_epochs, batch_idx, total_step, 
-                valid_loss))
+        # After each epoch, check if we should stop training early
+        flag, valid_loss = early_stop(valid_loss, val_loader, encoder, decoder, criterion)
+        print('Epoch [%d/%d], Step [%d/%d], Validation Loss: %.4f'
+              %(epoch+1, args.num_epochs, total_step, total_step, valid_loss))
+        if flag:
+            print('=== Early stopping === Validation loss has started increasing ===')
+            torch.save(decoder.state_dict(), 
+                        os.path.join(args.model_path, 
+                                    'decoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
+            torch.save(encoder.state_dict(), 
+                        os.path.join(args.model_path, 
+                                    'encoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
+            return
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -129,9 +124,9 @@ if __name__ == '__main__':
                         help='include top n most populated positions')
 
     # Control printing/saving
-    parser.add_argument('--log_step', type=int , default=10,
+    parser.add_argument('--log_step', type=int , default=20, #10,
                         help='step size for printing log info')
-    parser.add_argument('--save_step', type=int , default=1000,
+    parser.add_argument('--save_step', type=int , default=500, #1000,
                         help='step size for saving trained models')
     
     # Model hyperparameters
@@ -141,7 +136,7 @@ if __name__ == '__main__':
                         help='dimension of lstm hidden states')
     parser.add_argument('--num_layers', type=int, default=1,
                         help='number of layers in lstm')
-    parser.add_argument('--num_epochs', type=int, default=5)
+    parser.add_argument('--num_epochs', type=int, default=100) #5)
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--learning_rate', type=float, default=0.001)
