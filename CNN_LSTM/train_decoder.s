@@ -15,3 +15,4 @@ module load python3/intel/3.5.3
 module load pytorch/python3.5/0.2.0_3
 
 python train_decoder.py
+#python train_decoder.py --preprocessed --aligned_RRM_sequence TODO SEE NOTE FROM SHASHA

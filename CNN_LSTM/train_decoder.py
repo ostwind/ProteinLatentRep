@@ -51,7 +51,7 @@ def main(args):
 
     # Define the loss and optimizer
     criterion = nn.CrossEntropyLoss()
-    params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters()) # TODO
+    params = list(decoder.parameters()) + list(encoder.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
             
     # Train the models
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     # File paths
     parser.add_argument('--model_path', type=str, default='./',
                         help='path for saving trained models')
-    parser.add_argument('--aligned_RRM_path', type=str, default='../data/PF00076_rp55.txt', 
+    parser.add_argument('--aligned_RRM_path', type=str, default='../data/combined_data.txt' #'../data/PF00076_rp55.txt', 
                         help='path for aligned RRM input file')
     parser.add_argument('--processed_RRM_path', type=str, default='../data/aligned_processed_RRM.csv', 
                         help='path for outputting processed aligned_RRM data')
@@ -119,7 +119,6 @@ if __name__ == '__main__':
     # Preprocessing settings
     parser.add_argument('--preprocessed', action='store_true', default=False,
                         help='if RRM file is preprocessed')
-    # TODO: double check the store_true action
     parser.add_argument('--top_n', type=int, default=82, 
                         help='include top n most populated positions')
 
