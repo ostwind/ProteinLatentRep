@@ -1,9 +1,7 @@
 ''' this file's dir should be sibling to data/
     eliminate non informative positions
     one-hot encode and output each RRM sequence into csv
-    takes ~30 mins for 1e6 sequences
-    TODO: add argparse, remove hard-coded values
-'''
+    takes ~30 mins for 1e6 sequences'''
 import os
 import pandas as pd
 import numpy as np
@@ -14,7 +12,6 @@ from sklearn.preprocessing import LabelEncoder
 
 
 def txt_to_csv(raw_txt_path, sep=None):
-
     """parses txt file or fasta file into csv
     info_positions: list of positions populated beyond a threshold"""
 
@@ -36,8 +33,7 @@ def txt_to_csv(raw_txt_path, sep=None):
     return df
 
 
-def informative_positions(df, processed_RRM_path='../data/processed.csv', top_n=82, placeholder='-'):
-
+def informative_positions(df, processed_RRM_path, top_n, placeholder='-'):
     """rid of excessive placeholders, 
     keeping top_n most populated positions
     for pfam dataset, this is equivalent to keeping populated rate @.001 """
@@ -54,8 +50,7 @@ def informative_positions(df, processed_RRM_path='../data/processed.csv', top_n=
     df1.to_csv(processed_RRM_path)
     return df1
 
-def preprocess(preprocessed=False, RRM_path='../data/PF00076_rp55.txt', 
-    output_path='../data/processed_RRM.csv'):
+def preprocess(preprocessed=False, RRM_path, output_path):
     """if aligned=False, a vocab should be passed"""
     
     assert os.path.isfile(RRM_path), 'input RRM path: %s not found!' %(RRM_path)

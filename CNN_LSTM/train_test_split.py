@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 np.random.seed(0)
-ind_df = pd.read_csv('../data/rrm_rp55.csv')
+ind_df = pd.read_csv('../data/combined_data.txt') #('../data/rrm_rp55.csv')
 msk = np.random.randn(ind_df.shape[0]) < .7
 ind_df[msk].iloc[:,0].to_csv('../data/train_index.csv', 
 	index=False, header=False)
