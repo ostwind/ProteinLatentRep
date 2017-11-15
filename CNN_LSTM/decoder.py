@@ -4,7 +4,7 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
-# from torch.nn.utils.rnn import pack_padded_sequence
+from torch.nn.utils.rnn import pack_padded_sequence
 from torch.autograd import Variable
 
 class DecoderRNN(nn.Module):
@@ -22,12 +22,12 @@ class DecoderRNN(nn.Module):
         self.linear.weight.data.uniform_(-0.1, 0.1)
         self.linear.bias.data.fill_(0)
         
-    def forward(self, features, data):
+    def forward(self, features, captions, lengths):
         """Auto-encode RRM sequence vectors."""
-        embeddings = self.embed(data)
+        embeddings = self.embed(captions)
         embeddings = torch.cat((features.unsqueeze(1), embeddings), 1)
-        # packed = pack_padded_sequence(embeddings, lengths, batch_first=True) 
-        hiddens, _ = self.lstm(embeddings)
+        packed = pack_padded_sequence(embeddings, lengths, batch_first=True) 
+        hiddens, _ = self.lstm(packed)
         outputs = self.linear(hiddens[0])
         return outputs
     
