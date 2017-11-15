@@ -17,6 +17,7 @@ class RRM_Sequence(Dataset):
         super(RRM_Sequence).__init__()
         self.names = df.index # this could potentially be replaced by gene ID's 
         self.df = df
+        self.vocab = vocab
             
 
     def __len__(self):
@@ -24,12 +25,10 @@ class RRM_Sequence(Dataset):
 
     def __getitem__(self, idx):
         rrm_name = self.names[idx]
-        aligned_cols = [col for col in self.df.columns if 'unaligned' not in col]
-        unaligned_col = [col for col in self.df.columns if col not in aligned_cols]
-        rrm_aligned = [vocab['<start>']] + self.df.loc[rrm_name, aligned_cols].values.tolist()\
-         + [vocab['<start>']] # list of integers
-        rrm_unaligned = [integer for integer in rrm_aligned if interger != vocab['-']]
-        return name, torch.Tensor(rrm_aligned), torch.Tensor(rrm_unaligned)
+        rrm_aligned = [self.vocab(word) for word in \
+        self.df.loc[rrm_name, :].values.tolist()]# list of integers
+        rrm_unaligned = [integer for integer in rrm_aligned if integer != self.vocab('-')]
+        return rrm_name, torch.Tensor(rrm_aligned), torch.Tensor(rrm_unaligned)
 
 def collate_fn(data):
     data.sort(key=lambda x: len(x[2]), reverse=True)
@@ -38,9 +37,9 @@ def collate_fn(data):
 
     lengths = [len(rrm) for rrm in rrms_unaligned]
     unaligned = torch.zeros(len(rrms_unaligned), max(lengths)).long()
-    for i, rrm in rrms_unaligned:
+    for i, rrm in enumerate(rrms_unaligned):
         end = lengths[i]
-        unaligned[i, :end] = rrms_unaligned[:end]
+        unaligned[i, :end] = rrm[:end]
     return names, rrms_aligned, unaligned, lengths     
 
 
