@@ -111,7 +111,7 @@ if __name__ == '__main__':
     # File paths
     parser.add_argument('--model_path', type=str, default='./',
                         help='path for saving trained models')
-    parser.add_argument('--aligned_RRM_path', type=str, default='../data/combined_data.txt' #'../data/PF00076_rp55.txt', 
+    parser.add_argument('--aligned_RRM_path', type=str, default='../data/combined_data.txt', #'../data/PF00076_rp55.txt', 
                         help='path for aligned RRM input file')
     parser.add_argument('--processed_RRM_path', type=str, default='../data/aligned_processed_RRM.csv', 
                         help='path for outputting processed aligned_RRM data')
