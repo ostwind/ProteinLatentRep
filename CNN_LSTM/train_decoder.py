@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from torch.autograd import Variable
 from torch.nn.utils.rnn import pack_padded_sequence
 from preprocessing import preprocess
-from Decoder import DecoderRNN
+from decoder import DecoderRNN
 from EncoderCNN import ResNetEncoder
 from RRM_Sequence import RRM_Sequence, collate_fn
 
@@ -50,7 +50,7 @@ def main(args):
 
     # Define the loss and optimizer
     criterion = nn.CrossEntropyLoss()
-    params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
+    params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
     
     # Train the models
@@ -90,6 +90,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
+    # Random seed
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')    
 
@@ -128,10 +129,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
+    # CUDA settings
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(args.seed)
 
     main(args)
-
-    
