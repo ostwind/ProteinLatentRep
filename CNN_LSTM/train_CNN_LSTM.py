@@ -1,4 +1,4 @@
-# Train the LSTM decoder for the CNN+LSTM autoencoder architecture
+# Train the CNN+LSTM autoencoder architecture
 # Adapted from https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/03-advanced/image_captioning/train.py
 
 import os
@@ -9,10 +9,9 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
-# from torch.nn.utils.rnn import pack_padded_sequence
-# from build_vocab import Vocabulary  
+from torch.nn.utils.rnn import pack_padded_sequence
 from preprocessing import preprocess
-from decoder import DecoderRNN
+from Decoder import DecoderRNN
 from EncoderCNN import ResNetEncoder
 from RRM_Sequence import RRM_Sequence, collate_fn
 
@@ -22,24 +21,25 @@ def to_var(x, volatile=False):
     return Variable(x, volatile=volatile)
 
 def main(args):   
-
     if not os.path.exists(args.model_path):
         os.makedirs(args.model_path)
     
+    # Preprocess the RRM data
     vocab, df_aligned = preprocess(preprocessed=args.preprocessed, 
         RRM_path=args.aligned_RRM_path, output_path=args.processed_RRM_path)
 
+    # Prepare the training and validation sets
     train_index = pd.read_csv('../data/train_index.csv',header=None).iloc[:,0]
     train_loader = RRM_Sequence(df_aligned.loc[train_index, :], vocab)
     train_loader = DataLoader(train_loader, batch_size=args.batch_size, 
         shuffle=True, collate_fn=collate_fn)
     
-        
     val_index = pd.read_csv('../data/val_index.csv',header=None).iloc[:,0]
     val_loader = RRM_Sequence(df_aligned.loc[val_index, :], vocab)
     val_loader = DataLoader(val_loader, batch_size=args.batch_size, 
         shuffle=True, collate_fn=collate_fn)
 
+    # Define the models
     encoder = ResNetEncoder(len(vocab), args.embed_size)
     decoder = DecoderRNN(args.embed_size, args.hidden_size, 
                          len(vocab), args.num_layers)
@@ -48,15 +48,15 @@ def main(args):
         encoder.cuda()
         decoder.cuda()
 
+    # Define the loss and optimizer
     criterion = nn.CrossEntropyLoss()
-    params = list(decoder.parameters()) #+ list(encoder.linear.parameters()) + list(encoder.bn.parameters())
+    params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
     
     # Train the models
     total_step = len(train_loader)
     for epoch in range(args.num_epochs):
         for batch_idx, (names, rrms_aligned, rrms_unaligned, lengths) in enumerate(train_loader):
-            
             # Set mini-batch dataset
             rrms_aligned = to_var(rrms_aligned, volatile=True) 
             targets = pack_padded_sequence(rrms_unaligned, lengths, batch_first=True)[0]
@@ -72,7 +72,7 @@ def main(args):
 
             # Print log info
             if i % args.log_step == 0:
-                print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f'
+                print('Epoch [%d/%d], Step [%d/%d], Training Loss: %.4f, Training Perplexity: %5.4f'
                       %(epoch, args.num_epochs, i, total_step, 
                         loss.data[0], np.exp(loss.data[0]))) 
                 
@@ -81,37 +81,38 @@ def main(args):
                 torch.save(decoder.state_dict(), 
                            os.path.join(args.model_path, 
                                         'decoder-%d-%d.pkl' %(epoch+1, i+1)))
-#                 torch.save(encoder.state_dict(), 
-#                            os.path.join(args.model_path, 
-#                                         'encoder-%d-%d.pkl' %(epoch+1, i+1)))
+                torch.save(encoder.state_dict(), 
+                           os.path.join(args.model_path, 
+                                        'encoder-%d-%d.pkl' %(epoch+1, i+1)))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     
+    # CUDA settings
     parser.add_argument('--no-cuda', action='store_true', default=True,
                         help='disables CUDA training')
 
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')    
 
+    # File paths
     parser.add_argument('--model_path', type=str, default='./',
                         help='path for saving trained models')
-
     parser.add_argument('--aligned_RRM_path', type=str, default='../data/PF00076_rp55.txt', 
-        help='path for aligned RRM input file')
-
+                        help='path for aligned RRM input file')
     parser.add_argument('--processed_RRM_path', type=str, default='../data/aligned_processed_RRM.csv', 
-        help='path for outputting processed aligned_RRM data')
+                        help='path for outputting processed aligned_RRM data')
 
+    # Preprocessing settings
     parser.add_argument('--preprocessed', action='store_true', default=False,
                         help='if RRM file is preprocessed')
-    # double check the store_true action
-
+    # TODO: double check the store_true action
     parser.add_argument('--top_n', type=int, default=82, 
-        help='include top n most populated positions')
+                        help='include top n most populated positions')
 
+    # Control printing/saving
     parser.add_argument('--log_step', type=int , default=10,
-                        help='step size for prining log info')
+                        help='step size for printing log info')
     parser.add_argument('--save_step', type=int , default=1000,
                         help='step size for saving trained models')
     
@@ -129,11 +130,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
+    # Additional CUDA settings
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     torch.manual_seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
 
     main(args)
-
-    
