@@ -109,7 +109,7 @@ if __name__ == '__main__':
                         help='random seed (default: 1)')    
 
     # File paths
-    parser.add_argument('--model_path', type=str, default='./',
+    parser.add_argument('--model_path', type=str, default='../models/',
                         help='path for saving trained models')
     parser.add_argument('--aligned_RRM_path', type=str, default='../data/combined_data.txt', #'../data/PF00076_rp55.txt', 
                         help='path for aligned RRM input file')
