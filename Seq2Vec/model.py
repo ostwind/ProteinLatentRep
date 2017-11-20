@@ -86,6 +86,18 @@ negative sampling for learning procedure, and the threshold
 for sub-sampling high-frequency words are all selected using
 cross-validation.
 '''
+def split_ngrams(seq, n):
+    """
+    'AGAMQSASM' => [['AGA', 'MQS', 'ASM'], ['GAM','QSA'], ['AMQ', 'SAS']]
+    """
+    a, b, c = zip(*[iter(seq)]*n), zip(*[iter(seq[1:])]*n), zip(*[iter(seq[2:])]*n)
+    str_ngrams = []
+    for ngrams in [a,b,c]:
+        x = []
+        for ngram in ngrams:
+            x.append("".join(ngram))
+        str_ngrams.append(x)
+    return str_ngrams
 
 def gen_dir(filepath,n, out_dir):
     '''
