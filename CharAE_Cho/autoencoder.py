@@ -9,21 +9,31 @@ from decoder import cnn_decoder, AttnDecoderRNN, DecoderRNN
 class CharLevel_autoencoder(nn.Module):
       def __init__(self, criterion):
             super(CharLevel_autoencoder, self).__init__()
-            self.encoder_embedding = nn.Embedding(22, 128)
-            self.cnn_encoder = cnn_encoder()
-            self.rnn_encoder = rnn_encoder()
+            self.char_embedding_dim = 64
+            self.filter_widths = list(range(1, 8)) 
+            self.num_filters_per_width = 20
+            self.seq_len = 71
 
-            self.decoder_hidden_size = 80
+            self.encoder_embedding = nn.Embedding(22, self.char_embedding_dim)
+            self.cnn_encoder = cnn_encoder(
+            filter_widths = self.filter_widths,
+            num_filters_per_width = self.num_filters_per_width,
+            char_embedding_dim = self.char_embedding_dim,
+            seq_len = self.seq_len)
+            
+            self.decoder_hidden_size = len(self.filter_widths) * self.num_filters_per_width
+            self.rnn_encoder = rnn_encoder( 
+            hidden_size = self.decoder_hidden_size )
+
+            self.rnn_emits_len = 23
             self.decoder_embedding = nn.Embedding(22, self.decoder_hidden_size)
             self.attention_decoder = AttnDecoderRNN(
-                  hidden_size = decoder_hidden_size, output_size = 0)
+                  hidden_size = self.decoder_hidden_size, output_size = self.rnn_emits_len)
             self.criterion = criterion
 
-            self.seq_len = 27
-
-      def encode(self, data):
+      def encode(self, data, collect_filters = False):
             encoder_embedded = self.encoder_embedding(data).unsqueeze(1).transpose(2,3) 
-            encoded = self.cnn_encoder.forward(encoder_embedded)
+            encoded = self.cnn_encoder.forward(encoder_embedded, collect_filters)
             encoded = encoded.squeeze(2)
             #highway
             
@@ -34,8 +44,8 @@ class CharLevel_autoencoder(nn.Module):
             # store encoder outputs as they appear or store seq_len of them on last t?
             #outputs = Variable(torch.zeros(self.seq_len, 25))
 
-            encoder_outputs = Variable(torch.zeros(64, self.seq_len, self.decoder_hidden_size))
-            for symbol_ind in range(self.seq_len): 
+            encoder_outputs = Variable(torch.zeros(64, self.rnn_emits_len, self.decoder_hidden_size))
+            for symbol_ind in range(self.rnn_emits_len): 
                   output, encoder_hidden = self.rnn_encoder.forward(
                         encoded[:,:,symbol_ind], encoder_hidden)
                   #print(output.data.shape) # (81, 64, 128)
@@ -45,14 +55,13 @@ class CharLevel_autoencoder(nn.Module):
       def decode(self, data, data_onehot, encoder_hidden, encoder_outputs):   
             loss = 0
             decoder_hidden = encoder_hidden
-            for amino_acid_index in range(81): 
+            for amino_acid_index in range(self.seq_len): 
                   decoder_input = data.data[:, amino_acid_index].unsqueeze(0).transpose(0,1)    
                   #print(decoder_input.data.shape) # 1, 64
 
                   # # current symbol, current hidden state, outputs from encoder 
                   decoder_embedded = self.decoder_embedding(decoder_input) 
                   decoder_embedded = decoder_embedded.transpose(0,1)
-                  #print(decoder_embedded.data.shape)
                   decoder_output, decoder_hidden, attn_weights = self.attention_decoder.forward(
                   decoder_embedded, decoder_hidden, encoder_outputs)
                   
@@ -64,10 +73,7 @@ class CharLevel_autoencoder(nn.Module):
                   loss += self.criterion(
                         decoder_output.squeeze(0).float(),
                         Variable(target_amino_acid) ) 
-
-            # reconstructed, decoder_hidden = self.vanilla_decoder.forward(
-            # decoder_embedded, decoder_hidden)
-            return loss #reconstructed, decoder_hidden
+            return loss 
 
 # preliminary model
 class cnn_autoencoder(nn.Module):

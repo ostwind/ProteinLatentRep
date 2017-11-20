@@ -3,7 +3,7 @@ from util.loader import loader
 from autoencoder import CharLevel_autoencoder, cnn_autoencoder
 import pickle 
 
-num_epochs = 2
+num_epochs = 1
 batch_size = 64
 learning_rate = 1e-3
 
@@ -11,9 +11,10 @@ criterion = nn.BCEWithLogitsLoss()
 model = CharLevel_autoencoder(criterion)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
                              weight_decay=1e-5)
+seq_len = 71
 
 def train(model, optimizer, num_epochs, batch_size, learning_rate):
-    #model.load_state_dict(torch.load('./conv_autoencoder.pth'))
+    #model.load_state_dict(torch.load('./stable_model.pth'))
     train_loader, valid_loader = loader()
     
     latent_representation = []
@@ -29,7 +30,7 @@ def train(model, optimizer, num_epochs, batch_size, learning_rate):
             inp = data % 22
             inp_ = torch.unsqueeze(inp, 2)
             
-            data_onehot = torch.FloatTensor(64, 81, 22).zero_()
+            data_onehot = torch.FloatTensor(64, seq_len, 22).zero_()
             data_onehot.scatter_(2, inp_ , 1).float()
             data_onehot = data_onehot.unsqueeze(1)
             data_onehot = data_onehot.transpose(2, 3)
@@ -37,12 +38,15 @@ def train(model, optimizer, num_epochs, batch_size, learning_rate):
             data = Variable(data)
             
             # ===================forward=====================
-            encoder_outputs, encoder_hidden = model.encode(data)
-            #print(encoder_outputs.data.shape) # torch.Size([81, 64, 25])
+            encoder_outputs, encoder_hidden = model.encode(data, collect_filters = True)
+            
+            #print(encoder_outputs.data.shape, encoder_hidden.data.shape) 
+            #torch.Size([64, 27, 80],  torch.Size([1, 64, 80]))
 
-            if epoch == num_epochs-1: # save latent representation here
-                rep = encoder_outputs.data.transpose(0,1)
-                rep = rep.contiguous().view(64, -1).numpy()
+            #model.encode(data, collect_filters = True)
+            if epoch == num_epochs-1: # save latent representation
+
+                rep = encoder_outputs.data.view(64, -1).numpy()
                 if index == 100:
                     print('good job, everything looks good: a batchs latent rep has shape', rep.shape)
                 latent_representation.append(rep)
@@ -81,7 +85,7 @@ def evaluate(model, valid_loader ):
         inp = data % 22
         inp_ = torch.unsqueeze(inp, 2)
             
-        data_onehot = torch.FloatTensor(64, 81, 22).zero_()
+        data_onehot = torch.FloatTensor(64, seq_len, 22).zero_()
         data_onehot.scatter_(2, inp_ , 1).float()
         data_onehot = data_onehot.unsqueeze(1)
         data_onehot = data_onehot.transpose(2, 3)

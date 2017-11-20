@@ -2,14 +2,14 @@ from CharAE_Cho import *
 import torch.nn.functional as F
 
 class AttnDecoderRNN(nn.Module):
-    def __init__(self, output_size,hidden_size = 80, n_layers=1, dropout_p=0.6,):
+    def __init__(self, output_size, hidden_size, n_layers=1, dropout_p=0.6,):
         super(AttnDecoderRNN, self).__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
         self.n_layers = n_layers
         self.dropout_p = dropout_p
         
-        self.attn = nn.Linear(2*hidden_size, 27)
+        self.attn = nn.Linear(2*hidden_size, output_size)
         self.attn_combine = nn.Linear(2*hidden_size, hidden_size)
         self.dropout = nn.Dropout(self.dropout_p)
         self.gru = nn.GRU(hidden_size, hidden_size,)#  bidirectional = True)

@@ -5,7 +5,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from util.preprocessing import *
 import numpy as np
 
-def loader( batch_size = 64, shuffle = True, train_portion = 0.7, 
+def loader( batch_size = 64, shuffle = True, train_portion = 0.9, 
 data_pickle_path = "./data/data.p", name_pickle_path = "./data/names.p"):
     if not os.path.isfile(data_pickle_path) or not os.path.isfile(name_pickle_path):
         print('data or label pickles missing, preprocessing from raw file @ ../data/PF00076_rp55.txt')
