@@ -1,9 +1,6 @@
-import numpy as np
-import pandas as pd
+from __future__ import print_function
 import torch
-from build_vocab import build_vocab
-from torch.utils.data import Dataset, DataLoader
-
+from torch.utils.data import Dataset
 class RRM_Sequence(Dataset):
 
     """RRM dataset without one-hot encoding"""

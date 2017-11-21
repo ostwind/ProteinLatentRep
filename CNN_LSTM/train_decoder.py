@@ -1,11 +1,9 @@
-# Train the CNN+LSTM autoencoder architecture
-# Adapted from https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/03-advanced/image_captioning/train.py
-
+from __future__ import print_function
 import os
 import argparse
 import torch
+import pickle
 import torch.nn as nn
-import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
@@ -15,20 +13,28 @@ from decoder import DecoderRNN
 from EncoderCNN import ResNetEncoder
 from RRM_Sequence import RRM_Sequence, collate_fn
 from early_stopping import validate, early_stop
-
+from train_test_split import train_test_split
 def to_var(x, volatile=False):
     if torch.cuda.is_available():
         x = x.cuda()
     return Variable(x, volatile=volatile)
+
+def adjust_learning_rate(optimizer, epoch):
+    """Sets the learning rate to the initial LR decayed by 4 every epochs"""
+    lr = args.lr * (.25 ** (epoch // 10))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
 
 def main(args):   
     if not os.path.exists(args.model_path):
         os.makedirs(args.model_path)
     
     # Preprocess the RRM data
-    vocab, df_aligned = preprocess(preprocessed=args.preprocessed, 
-        RRM_path=args.aligned_RRM_path, output_path=args.processed_RRM_path)
-
+    vocab, df_aligned = preprocess(preprocessed=args.preprocessed, RRM_path=args.aligned_RRM_path,
+                                   output_path=args.processed_RRM_path, sep=args.sep)
+    df_aligned = train_test_split(df_aligned)
+    with open(os.path.join(args.model_path, 'vocab.pkl'), 'wb') as f:
+        pickle.dump(vocab, f)
     # Prepare the training and validation sets
     train_index = pd.read_csv('../data/train_index.csv',header=None).iloc[:,0]
     train_loader = RRM_Sequence(df_aligned.loc[train_index, :], vocab)
@@ -56,8 +62,8 @@ def main(args):
             
     # Train the models
     total_step = len(train_loader)
-    valid_loss = float("inf")
-    for epoch in range(args.num_epochs):
+    val_loss_history = []
+    for epoch_num, epoch in enumerate(range(args.num_epochs)):
         for batch_idx, (names, rrms_aligned, rrms_unaligned, lengths) in enumerate(train_loader):
             rrms_aligned = to_var(rrms_aligned) 
             rrms_unaligned = to_var(rrms_unaligned)
@@ -74,48 +80,53 @@ def main(args):
 
             # Print log info
             if batch_idx % args.log_step == 0:
-                print('Epoch [%d/%d], Step [%d/%d], Training Loss: %.4f'
+                val_loss = validate(val_loader, encoder, decoder, criterion)
+                val_loss_history.append(val_loss)
+                print('Epoch [%d/%d], Step [%d/%d], Training Loss: %.4f, Validation loss: %.4f'
                       %(epoch+1, args.num_epochs, batch_idx+1, total_step, 
-                        loss.data[0])) 
-                
+                        loss.data[0], val_loss))
+                non_trivial = early_stop(val_loss_history)
+                if non_trivial:
+                    print('=== Early stopping === Validation loss not improving significantly ===')
+                    torch.save(decoder.state_dict(),
+                               os.path.join(args.model_path, 'decoder-anneal-%s-%d-%d.pkl' % (
+                                   args.learning_rate_annealing, epoch + 1, batch_idx + 1)))
+                    torch.save(encoder.state_dict(),
+                               os.path.join(args.model_path, 'encoder-anneal-%s-%d-%d.pkl' % (
+                                   args.learning_rate_annealing, epoch + 1, batch_idx + 1)))
+                    break
+                    
             # Save the models
             if (batch_idx+1) % args.save_step == 0:
-                torch.save(decoder.state_dict(), 
-                            os.path.join(args.model_path, 
-                                        'decoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
-                torch.save(encoder.state_dict(), 
-                            os.path.join(args.model_path, 
-                                        'encoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
-                
-        # After each epoch, check if we should stop training early
-        flag, valid_loss = early_stop(valid_loss, val_loader, encoder, decoder, criterion)
-        print('Epoch [%d/%d], Step [%d/%d], Validation Loss: %.4f'
-              %(epoch+1, args.num_epochs, total_step, total_step, valid_loss))
-        if flag:
-            print('=== Early stopping === Validation loss has started increasing ===')
-            torch.save(decoder.state_dict(), 
-                        os.path.join(args.model_path, 
-                                    'decoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
-            torch.save(encoder.state_dict(), 
-                        os.path.join(args.model_path, 
-                                    'encoder-%d-%d.pkl' %(epoch+1, batch_idx+1)))
-            return
+                torch.save(decoder.state_dict(),
+                           os.path.join(args.model_path, 'decoder-anneal-%s-%d-%d.pkl' %(
+                                args.learning_rate_annealing, epoch+1, batch_idx+1)))
+                torch.save(encoder.state_dict(),
+                           os.path.join(args.model_path, 'encoder-anneal-%s-%d-%d.pkl' % (
+                               args.learning_rate_annealing, epoch + 1, batch_idx + 1)))
+
+        if args.learning_rate_annealing:
+            adjust_learning_rate(optimizer, epoch+1)
+
+        if non_trivial:
+            break
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Random seed
     parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')    
-
+                        help='random seed (default: 1)')
     # File paths
-    parser.add_argument('--model_path', type=str, default='../models/',
+    parser.add_argument('--model_path', type=str, default='./TrainedModels',
                         help='path for saving trained models')
-    parser.add_argument('--aligned_RRM_path', type=str, default='../data/combined_data.txt', #'../data/PF00076_rp55.txt', 
+    parser.add_argument('--aligned_RRM_path', type=str, default='../data/comineddata_nolinegaps_space_delim.fasta',
                         help='path for aligned RRM input file')
-    parser.add_argument('--processed_RRM_path', type=str, default='../data/aligned_processed_RRM.csv', 
+    parser.add_argument('--processed_RRM_path', type=str, default='../data/combined_processed_RRM.csv',
                         help='path for outputting processed aligned_RRM data')
-
+    parser.add_argument('--sep', type=str, default=' ',
+                        help='separator for RRM input file, default is space')
     # Preprocessing settings
     parser.add_argument('--preprocessed', action='store_true', default=False,
                         help='if RRM file is preprocessed')
@@ -129,14 +140,16 @@ if __name__ == '__main__':
                         help='step size for saving trained models')
     
     # Model hyperparameters
-    parser.add_argument('--embed_size', type=int, default=128, #256,
+    parser.add_argument('--embed_size', type=int, default=64, #256,
                         help='dimension of word embedding vectors')
-    parser.add_argument('--hidden_size', type=int, default=256, #512,
+    parser.add_argument('--learning_rate_annealing', action='store_true', default=False,
+                        help='turn lr annealing on')
+    parser.add_argument('--hidden_size', type=int, default=128, #512,
                         help='dimension of lstm hidden states')
     parser.add_argument('--num_layers', type=int, default=1,
                         help='number of layers in lstm')
     parser.add_argument('--num_epochs', type=int, default=100) #5)
-    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--learning_rate', type=float, default=0.001)
 

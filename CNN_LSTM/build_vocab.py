@@ -1,11 +1,10 @@
+from __future__ import print_function
+
 # Build vocabulary list of amino acids for CNN+LSTM autoencoder architecture
 # Adapted from https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/03-advanced/image_captioning/build_vocab.py
 
-import argparse
-import pickle
-import numpy as np
-import pandas as pd
-from collections import Counter
+
+
 
 class Vocabulary(object):
     """Simple vocabulary wrapper."""

@@ -1,5 +1,7 @@
+from __future__ import print_function
 from torch import nn
 import math
+import numpy as np
 
 class Bottleneck(nn.Module):
 
@@ -68,7 +70,7 @@ class ResNetEncoder(nn.Module):
         # http://cs231n.github.io/convolutional-networks/
 
         self.conv1 = nn.Conv2d(1, 8, kernel_size=(3,2), stride=(1, 2), 
-            padding=(0, 0), bias=False) # raw input is 80*64 
+            padding=(0, 0), bias=False) # raw input is 84*64 --> 80*32
         self.bn1 = nn.BatchNorm2d(8)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool1 = nn.MaxPool2d(kernel_size=(3,2), stride=(1, 1),
@@ -91,8 +93,11 @@ class ResNetEncoder(nn.Module):
         self.avgpool = nn.AvgPool2d(kernel_size=(5, 5), stride=1)
 
         # 15*13
-
-        self.lin = nn.Linear(512*195, emb_size)
+        width = 15
+        height = self._get_correct_dim(self._get_correct_dim(emb_size/2 + 1 + 1))
+        height = int(self._get_correct_dim(height))
+        # print(512*width*height, emb_size)
+        self.lin = nn.Linear(512*width*height, emb_size)
         self.bn = nn.BatchNorm1d(emb_size, momentum=0.01)
 
         # initialize original params
@@ -103,6 +108,9 @@ class ResNetEncoder(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+
+    def _get_correct_dim(self, height):
+        return np.floor((height-1)/2 + 1)
 
     def _make_layer(self, block, planes, blocks, stride=1):
 
@@ -149,6 +157,7 @@ class ResNetEncoder(nn.Module):
         x = self.avgpool(x)
         # print(x.size())
         x = x.view(x.size(0), -1)
+        # print(x.size())
         x = self.bn(self.lin(x))
 
         return x

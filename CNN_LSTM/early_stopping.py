@@ -1,10 +1,7 @@
+from __future__ import print_function
 import torch
-import torch.nn as nn
-import numpy as np
-import pandas as pd
-from torch.utils.data import DataLoader
-from torch.autograd import Variable
 from torch.nn.utils.rnn import pack_padded_sequence
+from torch.autograd import Variable
 
 def to_var(x, volatile=False):
     if torch.cuda.is_available():
@@ -14,6 +11,7 @@ def to_var(x, volatile=False):
 def validate(val_loader, encoder, decoder, criterion):
     """Returns validation loss for DataLoader val_loader, trained encoder, trained decoder,
     and criterion loss function."""
+    average_loss = 0
     for batch_idx, (names, rrms_aligned, rrms_unaligned, lengths) in enumerate(val_loader):
         rrms_aligned = to_var(rrms_aligned) 
         rrms_unaligned = to_var(rrms_unaligned)
@@ -25,12 +23,25 @@ def validate(val_loader, encoder, decoder, criterion):
 
         # Return loss according to given criterion
         loss = criterion(outputs, targets)
-        return loss.data[0]
+        average_loss += loss.data[0]
+    average_loss /= len(val_loader)
+    return average_loss
     
-def early_stop(prev_valid_loss, val_loader, encoder, decoder, criterion):
-    """Returns Boolean indicating whether we should stop early based on validation loss (also returned)"""
-    valid_loss = validate(val_loader, encoder, decoder, criterion)
-    
-    if valid_loss > prev_valid_loss:
-        return (True, valid_loss)
-    return (False, valid_loss)
+def early_stop(val_acc_history, k=10, required_progress=1e-4):
+    """
+    Stop the training if there is no non-trivial progress in k steps
+    @param val_acc_history: a list contains all the historical validation acc
+    @param required_progress: the next acc should be higher than the previous by 
+        at least required_progress amount to be non-trivial
+    @param t: number of training steps 
+    @return: a boolean indicates if the model should earily stop
+    """
+    non_trivial = 0
+    if len(val_acc_history)>k+1:
+        relevant_acc = list(reversed(val_acc_history[-k-1:]))
+        for i, acc in enumerate(relevant_acc):
+            if i != len(relevant_acc) - 1:
+                if acc - relevant_acc[i+1] > required_progress:
+                    non_trivial = 1
+                    break
+    return not non_trivial

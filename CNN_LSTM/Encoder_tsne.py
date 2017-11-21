@@ -5,7 +5,6 @@ outputs tsne transformed visualization"""
 
 import torch
 import argparse
-import numpy as np
 import pandas as pd
 from preprocessing import txt_to_csv
 from AutoEncoder import VAE

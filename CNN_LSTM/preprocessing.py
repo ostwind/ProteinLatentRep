@@ -1,14 +1,13 @@
+from __future__ import print_function
+import os
+import pandas as pd
+from build_vocab import build_vocab
+
 ''' this file's dir should be sibling to data/
     eliminate non informative positions
     one-hot encode and output each RRM sequence into csv
     takes ~30 mins for 1e6 sequences'''
-import os
-import pandas as pd
-import numpy as np
-import argparse
-import pickle
-from build_vocab import build_vocab
-from sklearn.preprocessing import LabelEncoder
+
 
 def txt_to_csv(raw_txt_path, sep=None):
     """parses txt file or fasta file into csv
@@ -20,34 +19,18 @@ def txt_to_csv(raw_txt_path, sep=None):
     name = None
     seq = None
     with open(raw_txt_path) as RRM:
-#        # UNCOMBINED DATA
-#        for i, line in enumerate(RRM):
-#            if '#' in line:
-#                pass
-#            else:
-#                name, seq = line.split(sep)
-#                name = name.replace('/', '_') # to distinguish from directory
-#                # separator down the line
-#                dic.update([(name, seq)])
-
-        # COMBINED DATA
-        for i, line in enumerate(RRM):
+       for i, line in enumerate(RRM):
             if '#' in line:
                 pass
-            elif '>' in line:
-                name = line[:-1] # ignore newline char at end
-                name = name.replace('>', '') # to get rid of unnecessary symbols
-                name = name.replace('/', '_') # to distinguish from directory
             else:
-                seq = line[:-1] # ignore newline char at end
-                
-            if name and seq:
+                name, seq = line.split(sep)
+                name = name.replace('/', '_') # to distinguish from directory
+                name = name.replace('>', '')
+                seq = seq.replace('\n', '')
+                # separator down the line
                 dic.update([(name, seq)])
-                name = None
-                seq = None
-    
-        df = pd.DataFrame(list(map(lambda x: list(x.upper()),
-            list(dic.values()))), index=dic.keys())
+
+    df = pd.DataFrame(list(map(lambda x: list(x.upper()), list(dic.values()))), index=dic.keys())
     return df
 
 def informative_positions(df, processed_RRM_path, top_n=82, placeholder='-'):
@@ -67,14 +50,14 @@ def informative_positions(df, processed_RRM_path, top_n=82, placeholder='-'):
     df1.to_csv(processed_RRM_path)
     return df1
 
-def preprocess(preprocessed, RRM_path, output_path):
-    """if aligned=False, a vocab should be passed"""
-    
+def preprocess(preprocessed, RRM_path, output_path, sep=' ', vocab=None):
     assert os.path.isfile(RRM_path), 'input RRM path: %s not found!' %(RRM_path)
     df = pd.read_csv(RRM_path, index_col=0)
     if not preprocessed:
-            df = txt_to_csv(RRM_path)
-            df = informative_positions(df, processed_RRM_path=output_path)
-    vocab = build_vocab(df)
-    
-    return vocab, df
+        df = txt_to_csv(RRM_path)
+        df= informative_positions(df, processed_RRM_path=output_path)
+    if not vocab:
+        vocab = build_vocab(df)
+        return vocab, df
+    else:
+        return df

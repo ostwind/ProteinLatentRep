@@ -1,11 +1,10 @@
-# Define the LSTM decoder for the CNN+LSTM autoencoder architecture
-# Adapted from https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/03-advanced/image_captioning/model.py
-
+from __future__ import print_function
 import torch
 import torch.nn as nn
-import torchvision.models as models
 from torch.nn.utils.rnn import pack_padded_sequence
-from torch.autograd import Variable
+
+# Define the LSTM decoder for the CNN+LSTM autoencoder architecture
+# Adapted from https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/03-advanced/image_captioning/model.py
 
 class DecoderRNN(nn.Module):
     def __init__(self, embed_size, hidden_size, vocab_size, num_layers):
