@@ -3,7 +3,7 @@ from util.loader import loader
 from autoencoder import CharLevel_autoencoder, cnn_autoencoder
 import pickle 
 
-num_epochs = 1
+num_epochs = 5
 batch_size = 64
 learning_rate = 1e-3
 
@@ -11,10 +11,10 @@ criterion = nn.BCEWithLogitsLoss()
 model = CharLevel_autoencoder(criterion)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
                              weight_decay=1e-5)
-seq_len = 71
+seq_len = 84
 
 def train(model, optimizer, num_epochs, batch_size, learning_rate):
-    #model.load_state_dict(torch.load('./stable_model.pth'))
+    #model.load_state_dict(torch.load('./autoencoder.pth'))
     train_loader, valid_loader = loader()
     
     latent_representation = []
@@ -38,14 +38,13 @@ def train(model, optimizer, num_epochs, batch_size, learning_rate):
             data = Variable(data)
             
             # ===================forward=====================
-            encoder_outputs, encoder_hidden = model.encode(data, collect_filters = True)
-            
+            if epoch != num_epochs - 1:
+                encoder_outputs, encoder_hidden = model.encode(data)
             #print(encoder_outputs.data.shape, encoder_hidden.data.shape) 
             #torch.Size([64, 27, 80],  torch.Size([1, 64, 80]))
-
-            #model.encode(data, collect_filters = True)
-            if epoch == num_epochs-1: # save latent representation
-
+            else:
+                encoder_outputs, encoder_hidden = model.encode(
+                    data, collect_filters = True)
                 rep = encoder_outputs.data.view(64, -1).numpy()
                 if index == 100:
                     print('good job, everything looks good: a batchs latent rep has shape', rep.shape)
@@ -69,7 +68,7 @@ def train(model, optimizer, num_epochs, batch_size, learning_rate):
             optimizer.step()
         
         # ===================log========================
-        torch.save(model.state_dict(), './conv_autoencoder.pth')
+        torch.save(model.state_dict(), './autoencoder.pth')
         print('epoch [{}/{}], loss:{:.4f}'
             .format(epoch+1, num_epochs, loss.data[0]))
 

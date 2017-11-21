@@ -10,9 +10,9 @@ class CharLevel_autoencoder(nn.Module):
       def __init__(self, criterion):
             super(CharLevel_autoencoder, self).__init__()
             self.char_embedding_dim = 64
-            self.filter_widths = list(range(1, 8)) 
-            self.num_filters_per_width = 20
-            self.seq_len = 71
+            self.filter_widths = list(range(1, 6)) 
+            self.num_filters_per_width = 7
+            self.seq_len = 84
 
             self.encoder_embedding = nn.Embedding(22, self.char_embedding_dim)
             self.cnn_encoder = cnn_encoder(
@@ -25,7 +25,7 @@ class CharLevel_autoencoder(nn.Module):
             self.rnn_encoder = rnn_encoder( 
             hidden_size = self.decoder_hidden_size )
 
-            self.rnn_emits_len = 23
+            self.rnn_emits_len = 21
             self.decoder_embedding = nn.Embedding(22, self.decoder_hidden_size)
             self.attention_decoder = AttnDecoderRNN(
                   hidden_size = self.decoder_hidden_size, output_size = self.rnn_emits_len)

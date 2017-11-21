@@ -40,7 +40,7 @@ class cnn_encoder(nn.Module):
                     stride=1)  
             self.filter_banks.append( self.k_filters )
 
-        self.pool = nn.MaxPool1d( 3 , return_indices=True)  
+        self.pool = nn.MaxPool1d( 4 , return_indices=True)  
 
     def forward(self, x, collect_filters):
         all_activations = []

@@ -28,7 +28,9 @@ def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
                     continue
             
             non_empty_strings = [s for s in line.split(' ') if s]
+            #print(non_empty_strings[0])
             keys.append(non_empty_strings[0].replace("/","_"))
+            #print(non_empty_strings)
             if not position_ind:
                 vals.append(non_empty_strings[-1][:-2]) # elim /n char
 
@@ -44,11 +46,11 @@ def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
     if sample_ind: # if position + sample filtered, write fasta version for Seq2Vec
         write_fasta(vals, keys, fasta_name = './data/RRM_55_sample_position_filtered.fasta')
         print(len(vals), ' samples made it')
-
+    
     df = pd.DataFrame({'keys': keys, 'vals': vals})
     return df
 
-def _filter_positions(df, threshold = 0.1, plot=True):
+def _filter_positions(df, threshold = 0.01, plot=False):
     seq_list = df['vals'].tolist()
     #print(seq_list[0], len(seq_list))
     
@@ -73,7 +75,7 @@ def _filter_positions(df, threshold = 0.1, plot=True):
     print(sum(keep_pos_ind),'/', len(keep_pos_ind), ' positions made it')
     return keep_pos_ind
 
-def _filter_samples(df, threshold = 0.9, plot = True):
+def _filter_samples(df, threshold = 0.4, plot = False):
     seq_list = df['vals'].tolist()
     
     sample_occupancies, keep_sample_ind =[], []
@@ -115,6 +117,7 @@ def one_hot_pickle(df2):
         #possible_symbols = possible_symbols + list(label_encoder.inverse_transform(integer_encoded))
         #print(list(label_encoder.inverse_transform(integer_encoded)))
     #print(set(possible_symbols))
+
     pickle.dump( np.array(dataset), open( "./data/data.p", "wb" ) )
     pickle.dump( np.array(name_list), open( "./data/names.p", "wb" ) )
 
@@ -126,13 +129,16 @@ def preprocess(raw_txt_path = './data/combineddata.fasta'):
     
     position_ind = _filter_positions(df)
     df1 = txt_to_csv(raw_txt_path,  position_ind = position_ind)
-
+    
     sample_ind = _filter_samples(df1)
-
     df2 = txt_to_csv(raw_txt_path, position_ind = position_ind,
     sample_ind = sample_ind,
     )
     one_hot_pickle(df2)
+
+    thefile = open('test.txt', 'w')
+    for item in df2['keys'].tolist():
+      thefile.write("%s\n" % item)
 
 
 #def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
