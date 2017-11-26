@@ -8,7 +8,7 @@ from torch.utils.data.dataset import Dataset
 from Bio import SeqIO
 
 
-def training_loop(batch_size, num_epochs, model, optim, data_iter, rna_options):
+def training_loop(batch_size, num_epochs, model, optim, data_iter, rna_options, print_every=50):
     step = 0
     epoch = 0
     losses = []
@@ -22,7 +22,7 @@ def training_loop(batch_size, num_epochs, model, optim, data_iter, rna_options):
             model.train()
             model.zero_grad()
 
-            outs = test_model.forward(3, learned_embs, poss_matches)
+            outs = model.forward(3, learned_embs, poss_matches)
             # print(outs.size())
             new_mat = known_matches - outs
             loss = torch.bmm(new_mat.view(new_mat.size()[0], 1, new_mat.size()[1]),
@@ -36,7 +36,7 @@ def training_loop(batch_size, num_epochs, model, optim, data_iter, rna_options):
 
 
         epoch += 1
-        if epoch % 500 == 0:
+        if epoch % print_every == 0:
             print( "Epoch:", (epoch), "Avg Loss:", np.mean(losses)/(total_batches*epoch) )
         
         step += 1
