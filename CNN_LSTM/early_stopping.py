@@ -36,12 +36,12 @@ def early_stop(val_acc_history, k=10, required_progress=1e-4):
     @param t: number of training steps 
     @return: a boolean indicates if the model should earily stop
     """
-    non_trivial = 0
-    if len(val_acc_history)>k+1:
-        relevant_acc = list(reversed(val_acc_history[-k-1:]))
-        for i, acc in enumerate(relevant_acc):
-            if i != len(relevant_acc) - 1:
-                if acc - relevant_acc[i+1] > required_progress:
+    non_trivial = 1
+    if len(val_acc_history)>=k+1:
+        non_trivial = 0
+        for i, acc in enumerate(val_acc_history):
+            if i != len(val_acc_history) - 1:
+                if val_acc_history[i+1]-acc < -required_progress:
                     non_trivial = 1
                     break
     return not non_trivial

@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import pandas as pd
+import re
 from build_vocab import build_vocab
 
 ''' this file's dir should be sibling to data/

@@ -59,7 +59,7 @@ class Bottleneck(nn.Module):
 
 class ResNetEncoder(nn.Module):
 
-    def __init__(self, vocab_size, emb_size, expansion=4):
+    def __init__(self, original_size, vocab_size, emb_size, expansion=4):
         super(ResNetEncoder, self).__init__()
 
         self.inplanes = 32
@@ -93,9 +93,11 @@ class ResNetEncoder(nn.Module):
         self.avgpool = nn.AvgPool2d(kernel_size=(5, 5), stride=1)
 
         # 15*13
-        width = 15
-        height = self._get_correct_dim(self._get_correct_dim(emb_size/2 + 1 + 1))
-        height = int(self._get_correct_dim(height))
+        # TODO: add conditional statement that if width is > threshold, add another block to reduce dimension
+        width = int(self._get_correct_dim(self._get_correct_dim(original_size - 4 - 2 - 2)))
+        width  = width - 4
+        height = int(self._get_correct_dim(self._get_correct_dim(emb_size/2 + 1 + 1)))
+        height = height - 4
         # print(512*width*height, emb_size)
         self.lin = nn.Linear(512*width*height, emb_size)
         self.bn = nn.BatchNorm1d(emb_size, momentum=0.01)

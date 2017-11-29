@@ -20,10 +20,11 @@ def to_var(x, volatile=False):
     return Variable(x, volatile=volatile)
 
 def adjust_learning_rate(optimizer, epoch):
-    """Sets the learning rate to the initial LR decayed by 4 every epochs"""
-    lr = args.lr * (.25 ** (epoch // 10))
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+    """Decays learning rate to a quarter each epoch, after first 5 epochs"""
+    if epoch > 5:
+        lr = args.learning_rate * (.5 ** ((epoch-5)//5))
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
 
 def main(args):   
     if not os.path.exists(args.model_path):
@@ -38,8 +39,8 @@ def main(args):
     # Prepare the training and validation sets
     train_index = pd.read_csv('../data/train_index.csv',header=None).iloc[:,0]
     train_loader = RRM_Sequence(df_aligned.loc[train_index, :], vocab)
-    train_loader = DataLoader(train_loader, batch_size=args.batch_size, 
-        shuffle=True, collate_fn=collate_fn)
+    train_loader = DataLoader(train_loader, batch_size=args.batch_size,
+                              shuffle=True, collate_fn=collate_fn)
     
     val_index = pd.read_csv('../data/val_index.csv',header=None).iloc[:,0]
     val_loader = RRM_Sequence(df_aligned.loc[val_index, :], vocab)
@@ -47,7 +48,7 @@ def main(args):
         shuffle=True, collate_fn=collate_fn)
 
     # Define the models
-    encoder = ResNetEncoder(len(vocab), args.embed_size)
+    encoder = ResNetEncoder(df_aligned.shape[1], len(vocab), args.embed_size)
     decoder = DecoderRNN(args.embed_size, args.hidden_size, 
                          len(vocab), args.num_layers)
     
@@ -79,36 +80,36 @@ def main(args):
             optimizer.step()
 
             # Print log info
-            if batch_idx % args.log_step == 0:
+            if (batch_idx+1) % args.log_step == 0:
                 val_loss = validate(val_loader, encoder, decoder, criterion)
                 val_loss_history.append(val_loss)
                 print('Epoch [%d/%d], Step [%d/%d], Training Loss: %.4f, Validation loss: %.4f'
                       %(epoch+1, args.num_epochs, batch_idx+1, total_step, 
                         loss.data[0], val_loss))
-                non_trivial = early_stop(val_loss_history)
-                if non_trivial:
+                stop = early_stop(val_loss_history)
+                if stop:
                     print('=== Early stopping === Validation loss not improving significantly ===')
                     torch.save(decoder.state_dict(),
-                               os.path.join(args.model_path, 'decoder-anneal-%s-%d-%d.pkl' % (
-                                   args.learning_rate_annealing, epoch + 1, batch_idx + 1)))
+                               os.path.join(args.model_path, 'decoder-anneal%s-%dcolumns-%d-%d.pkl' % (
+                                   args.learning_rate_annealing, df_aligned.shape[1], epoch + 1, batch_idx + 1)))
                     torch.save(encoder.state_dict(),
-                               os.path.join(args.model_path, 'encoder-anneal-%s-%d-%d.pkl' % (
-                                   args.learning_rate_annealing, epoch + 1, batch_idx + 1)))
+                               os.path.join(args.model_path, 'encoder-anneal%s-%dcolumns-%d-%d.pkl' % (
+                                   args.learning_rate_annealing, df_aligned.shape[1], epoch + 1, batch_idx + 1)))
                     break
-                    
+
             # Save the models
             if (batch_idx+1) % args.save_step == 0:
                 torch.save(decoder.state_dict(),
-                           os.path.join(args.model_path, 'decoder-anneal-%s-%d-%d.pkl' %(
-                                args.learning_rate_annealing, epoch+1, batch_idx+1)))
+                           os.path.join(args.model_path, 'decoder-anneal%s-%dcolumns-%d-%d.pkl' % (
+                               args.learning_rate_annealing, df_aligned.shape[1], epoch + 1, batch_idx + 1)))
                 torch.save(encoder.state_dict(),
-                           os.path.join(args.model_path, 'encoder-anneal-%s-%d-%d.pkl' % (
-                               args.learning_rate_annealing, epoch + 1, batch_idx + 1)))
+                           os.path.join(args.model_path, 'encoder-anneal%s-%dcolumns-%d-%d.pkl' % (
+                               args.learning_rate_annealing, df_aligned.shape[1], epoch + 1, batch_idx + 1)))
 
         if args.learning_rate_annealing:
             adjust_learning_rate(optimizer, epoch+1)
 
-        if non_trivial:
+        if stop:
             break
 
 
