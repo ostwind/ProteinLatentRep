@@ -34,8 +34,8 @@ def main(args):
     loader = RRM_Sequence(df_aligned, vocab)
     loader = DataLoader(loader, 16, shuffle=True, collate_fn=collate_fn)
 
-    encoderCNN = ResNetEncoder(84, 26, 128)  # TODO don't hardcode?
-    decoderRNN = DecoderRNN(128, 256, 26, 1)  # TODO don't hardcode?
+    encoderCNN = ResNetEncoder(84, 26, 64)  # TODO don't hardcode?
+    decoderRNN = DecoderRNN(64, 128, 26, 1)  # TODO don't hardcode?
     
     # Use CUDA if available
     if torch.cuda.is_available():
