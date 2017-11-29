@@ -43,7 +43,16 @@ Thumbs.db
 .ipynb_checkpoints
 */__pycache__
 
-# Data files #
-##############
+# Data and pickled model files #
+################################
 data/
+TrainedModels/
+models/
 
+# Files from merge conflicts #
+##############################
+CNN_LSTM/train_CNN_LSTM.py.orig
+CNN_LSTM/train_CNN_LSTM_BACKUP_17608.py
+CNN_LSTM/train_CNN_LSTM_BASE_17608.py
+CNN_LSTM/train_CNN_LSTM_LOCAL_17608.py
+CNN_LSTM/train_CNN_LSTM_REMOTE_17608.py
