@@ -51,7 +51,7 @@ def plot3d(plot_name, labels, latent_representation, take_first_n = 10000, perpl
                   tsne_projection[all_l_indices,2], 
                   c= cur_color, label=l, s = 5)
 
-      ax.legend(loc = 'right')
+      ax.legend(loc = 'upper left', bbox_to_anchor = (1,1))
       #ax = plt.gca()
       #legend = ax.get_legend()
       # ax.set_zlim(-10, 10)
@@ -90,6 +90,7 @@ def plot(plot_name, labels, latent_representation, take_first_n = 10000, perplex
             large_gene_symbol.append(all_l_indices)
             unique_labels_filtered.append(l)
 
+      plt.figure(figsize=(20,20))
       colors = iter(cm.jet(np.linspace(0, 1, len(large_gene_symbol))))
       for l, all_l_indices in zip(unique_labels_filtered, large_gene_symbol):
             cur_color = next(colors)
@@ -98,7 +99,7 @@ def plot(plot_name, labels, latent_representation, take_first_n = 10000, perplex
                   tsne_projection[all_l_indices,1], 
                   c= cur_color, label=l, s = 5)
 
-      plt.legend(loc = 'right')
+      plt.legend(loc = 'upper left', bbox_to_anchor = (1,1))
       ax = plt.gca()
       #legend = ax.get_legend()
       
