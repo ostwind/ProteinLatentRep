@@ -4,12 +4,12 @@ import matplotlib.cm as cm
 import numpy as np 
 
 def tsne(matrix,
-      perplexity = 40, n_iter = 2000, n_components = 2, ): 
+      perplexity = 40, n_iter = 2000, n_components = 2): 
       tsne = TSNE(
             n_components= n_components, verbose=1, perplexity=perplexity, n_iter=n_iter)
       return tsne.fit_transform(matrix)
 
-def plot3d(plot_name, labels, latent_representation, take_first_n = 10000): 
+def plot3d(plot_name, labels, latent_representation, take_first_n = 10000, perplexity = 40): 
       ''' list int, str labels: color point according to this color 
           np.ndarray tsne_projection: [ Num of sequences X Dim of Latent Rep. ]
           take_first_n: only first n row will show in tsne projection 
@@ -24,7 +24,7 @@ def plot3d(plot_name, labels, latent_representation, take_first_n = 10000):
       labels = labels[:take_first_n]
       latent_representation = latent_representation[:take_first_n, :]
 
-      tsne_projection = tsne(latent_representation, n_components = 3)
+      tsne_projection = tsne(latent_representation, n_components = 3, perplexity = perplexity)
 
       # color by label, 
       unique_labels = sorted(list(set(labels)))
@@ -51,7 +51,7 @@ def plot3d(plot_name, labels, latent_representation, take_first_n = 10000):
                   tsne_projection[all_l_indices,2], 
                   c= cur_color, label=l, s = 5)
 
-      ax.legend()
+      ax.legend(loc = 'right')
       #ax = plt.gca()
       #legend = ax.get_legend()
       # ax.set_zlim(-10, 10)
@@ -61,7 +61,7 @@ def plot3d(plot_name, labels, latent_representation, take_first_n = 10000):
       plt.show()
 
 
-def plot(plot_name, labels, latent_representation, take_first_n = 10000): 
+def plot(plot_name, labels, latent_representation, take_first_n = 10000, perplexity = 40): 
       ''' list int, str labels: color point according to this color 
           np.ndarray tsne_projection: [ Num of sequences X Dim of Latent Rep. ]
           take_first_n: only first n row will show in tsne projection 
@@ -75,7 +75,7 @@ def plot(plot_name, labels, latent_representation, take_first_n = 10000):
       labels = labels[:take_first_n]
       latent_representation = latent_representation[:take_first_n, :]
 
-      tsne_projection = tsne(latent_representation)
+      tsne_projection = tsne(latent_representation, perplexity = perplexity)
 
       # color by label, 
       unique_labels = sorted(list(set(labels)))
@@ -98,7 +98,7 @@ def plot(plot_name, labels, latent_representation, take_first_n = 10000):
                   tsne_projection[all_l_indices,1], 
                   c= cur_color, label=l, s = 5)
 
-      plt.legend()
+      plt.legend(loc = 'right')
       ax = plt.gca()
       #legend = ax.get_legend()
       
