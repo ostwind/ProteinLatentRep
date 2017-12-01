@@ -43,11 +43,12 @@ Thumbs.db
 .ipynb_checkpoints
 */__pycache__
 
-# Data and pickled model files #
-################################
+# Data, images, and pickled models #
+####################################
 data/
 TrainedModels/
 models/
+*.png
 
 # Files from merge conflicts #
 ##############################
