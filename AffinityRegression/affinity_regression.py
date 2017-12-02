@@ -24,6 +24,8 @@ class AfinityRegression(nn.Module):
         self.lin1 = nn.Linear(emb_dim, rna_dim)
     
     def init_weights(self):
+        for x in self.lin1.parameters():
+            x.data = x.data.normal_(0.0, 0.02)
         return None
     
     def forward(self, batch_size, embs, rna_samples):
