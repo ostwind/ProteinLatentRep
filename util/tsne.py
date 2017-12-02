@@ -22,7 +22,6 @@ def plotly_scatter(plot_name, labels, latent_representation, take_first_n = 1000
 
       labels = labels[:take_first_n]
       latent_representation = latent_representation[:take_first_n, :]
-
       latent_representation = tsne(latent_representation)
 
       unique_labels = sorted(list(set(labels)))
@@ -31,7 +30,7 @@ def plotly_scatter(plot_name, labels, latent_representation, take_first_n = 1000
       large_gene_symbol, unique_labels_filtered = [], []
       for l in unique_labels: 
             all_l_indices = [i for i,x in enumerate(labels) if x == l]
-            if len(all_l_indices) < 40 or len(all_l_indices) > 100:
+            if len(all_l_indices) < 40 or len(all_l_indices) > 60:
                   continue  
             print(l, len(all_l_indices))
             large_gene_symbol.append(all_l_indices)
@@ -161,8 +160,6 @@ def hist(hist_name, array, bins = 100, show = True, ):
       plt.savefig('./CharAE_Cho/activations/%s' %(hist_name))
       plt.clf()
       
-
-
 def plot3d(plot_name, labels, latent_representation, take_first_n = 10000): 
       ''' list int, str labels: color point according to this color 
           np.ndarray tsne_projection: [ Num of sequences X Dim of Latent Rep. ]

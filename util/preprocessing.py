@@ -18,37 +18,46 @@ import matplotlib.pyplot as plt
 from util.tsne import hist
 
 def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
-    keys = []
-    vals = []
+    labeled_keys, keys = [], []
+    labeled_vals, vals = [], []
     with open(raw_txt_path) as RRM:
         for line_index, line in enumerate(RRM):
-            # filtering by samples, skip if the sample indicator variable is 0 at current sample    
-            if sample_ind:
-                if not sample_ind[line_index]:
-                    continue
-            
             non_empty_strings = [s for s in line.split(' ') if s]
-            #print(non_empty_strings[0])
-            keys.append(non_empty_strings[0].replace("/","_"))
-            #print(non_empty_strings)
-            if not position_ind:
-                vals.append(non_empty_strings[-1][:-2]) # elim /n char
+            protein_name, protein = non_empty_strings[0], non_empty_strings[-1]
+            #if not position_ind: # nothing filtered, do text tuncating
+            # remove '>' from name, '/' -> '_', delete '\n' in protein seq
+            protein_name, protein = protein_name[1:].replace("/","_"), protein[:-2] 
 
-            else:
+            # filtering by samples, skip if the sample indicator variable is 0 at current sample    
+            if sample_ind: # filtered, last call before pickling
+                # if '||' in protein_name: # never filter labeled data
+                #     labeled_keys.append(protein_name)
+                #     labeled_vals.append(protein)        
+                #     continue
+
+                if '||' not in protein_name: # if its unlabeled data AND was filtered as sample: 
+                    if not sample_ind[line_index]:
+                        continue
+                
+            sequence_filtered = protein
+            if position_ind:
                 # filtering by positions
-                sequence = non_empty_strings[-1]
                 sequence_filtered = []
                 for i in range(len(position_ind)):
                     if position_ind[i]: # 1/0 indicator bit
-                        sequence_filtered.append( sequence[i] )
-                vals.append( "".join(sequence_filtered) )
+                        sequence_filtered.append( protein[i] )
+            
+            keys.append(protein_name)
+            vals.append( "".join(sequence_filtered) )
 
     if sample_ind: # if position + sample filtered, write fasta version for Seq2Vec
-        write_fasta(vals, keys, fasta_name = './data/RRM_55_sample_position_filtered.fasta')
+        #write_fasta(vals, keys, fasta_name = './data/RRM_55_sample_position_filtered.fasta')
         print(len(vals), ' samples made it')
     
     df = pd.DataFrame({'keys': keys, 'vals': vals})
-    return df
+    labeled_df = pd.DataFrame({'keys': labeled_keys, 'vals': labeled_vals})
+    
+    return df, labeled_df
 
 def _filter_positions(df, threshold = 0.01, plot=False):
     seq_list = df['vals'].tolist()
@@ -75,7 +84,7 @@ def _filter_positions(df, threshold = 0.01, plot=False):
     print(sum(keep_pos_ind),'/', len(keep_pos_ind), ' positions made it')
     return keep_pos_ind
 
-def _filter_samples(df, threshold = 0.4, plot = False):
+def _filter_samples(df, threshold = 0.7, plot = True):
     seq_list = df['vals'].tolist()
     
     sample_occupancies, keep_sample_ind =[], []
@@ -97,9 +106,8 @@ def _filter_samples(df, threshold = 0.4, plot = False):
     return keep_sample_ind  
 
 def one_hot_pickle(df2):
-    seq_list = df2['vals'].tolist()
-    name_list = df2['keys'].tolist()
-
+    seq_list, name_list = df2['vals'].tolist(), df2['keys'].tolist()
+ 
     label_encoder = LabelEncoder()
     #onehot_encoder = OneHotEncoder(sparse=False)
     label_encoder.fit(  list(set(''.join(seq_list))))
@@ -121,68 +129,45 @@ def one_hot_pickle(df2):
     pickle.dump( np.array(dataset), open( "./data/data.p", "wb" ) )
     pickle.dump( np.array(name_list), open( "./data/names.p", "wb" ) )
 
+def _form_proteins(df):
+    ''' takes in all labeled RRMs, bin them into their proteins, pickle file with data and name
+    '''
+    rrm_names, rrms = df['keys'].tolist(), df['vals'].tolist()
+    protein_dictionary= dict()
+    #protein_dictionary = {k: [[], [], [], [], []] for k in range(800)}
+
+    for index, (rrm_name, rrm) in enumerate( zip(rrm_names, rrms) ):
+        protein_name, rrm_position = rrm_name.split('_RRM__')[0], int(rrm_name.split('_RRM__')[-1]) 
+
+        if protein_name not in protein_dictionary.keys():
+            protein_dictionary[protein_name] = ['','','','']
+            protein_dictionary[protein_name][rrm_position] = rrm             
+        else:
+            protein_dictionary[protein_name][rrm_position] = rrm             
+
+    print(protein_dictionary)
+
+
 def preprocess(raw_txt_path = './data/combineddata.fasta'):
     assert os.path.isfile(raw_txt_path), '%s not found!' %(raw_txt_path)
     
-    df = txt_to_csv(raw_txt_path, ) # first convert to csv
+    df, _ = txt_to_csv(raw_txt_path, ) # first convert to csv
     #filter empty positions then re-write csv to informative_csv_path
     
     position_ind = _filter_positions(df)
-    df1 = txt_to_csv(raw_txt_path,  position_ind = position_ind)
+    df1, _ = txt_to_csv(raw_txt_path,  position_ind = position_ind)
     
     sample_ind = _filter_samples(df1)
-    df2 = txt_to_csv(raw_txt_path, position_ind = position_ind,
-    sample_ind = sample_ind,
-    )
+    df2, labeled_df = txt_to_csv(raw_txt_path, position_ind = position_ind,
+    sample_ind = sample_ind,)
+
+    #_form_proteins(labeled_df) 
+
     one_hot_pickle(df2)
 
     thefile = open('test.txt', 'w')
     for item in df2['keys'].tolist():
       thefile.write("%s\n" % item)
 
-
-#def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
-#     keys = []
-#     vals = []
-#     sequence = ''
-    
-#     with open(raw_txt_path) as RRM:
-#         lines = RRM.readlines()
-#         last = lines[-1]
-#         for line_index, line in enumerate(RRM):
-#             print(line_index)
-#             # filtering by samples, skip if the sample indicator variable is 0 at current sample    
-#             if sample_ind:
-#                 if not sample_ind[line_index]:
-#                     continue
-            
-#             if '>' in line:
-#                 keys.append(line[1:-2]) # not a line, this is a line name
-
-#             else:
-#                 sequence += line.strip()
-#                 next_line = next(RRM)
-#                 if line == last:
-#                     vals.append(sequence)
-#                     break
-
-#                     if '>' in next_line:
-#                         if position_ind:
-#                             sequence_filtered = []
-#                             for i in range(len(position_ind)):
-#                                 if position_ind[i]:
-#                                     sequence_filtered.append(sequence[i])
-#                             sequence = sequence_filtered
-
-#                             vals.append(sequence)
-#                             sequence = ''
-                
-#     if sample_ind: # if position + sample filtered, write fasta version for Seq2Vec
-#         write_fasta(vals, keys, fasta_name = './data/RRM_55_sample_position_filtered.fasta')
-#         print(len(vals), ' samples made it')
-
-#     print(len(keys), len(vals), vals[0])
-#     df = pd.DataFrame({'keys': keys, 'vals': vals})
-    
-#     # write df if it dosen't fit in RAM 
-#     return df
+if __name__ == '__main__':
+      preprocess()
