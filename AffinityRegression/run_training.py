@@ -25,6 +25,10 @@ def create_parser(args_in=None):
     parser.add_argument('--loss', type=str, default="SGD", help="Loss to use for training")
     parser.add_argument('--lr', type=float, default=0.001, help="learning rate for optim")
     parser.add_argument('--eval_every', type=int, default=5000, help="print auc on dev set every iterations (default: 5000)")
+    parser.add_argument('--print_every', type=int, default=100, help="print auc on dev set every iterations (default: 5000)")
+    parser.add_argument('--batch_size', type=int, default=16, help="batch size (default 16)")
+    parser.add_argument('--num_epochs', type=int, default=2000, help="batch size (default 16)")
+    
 
     
     
@@ -142,11 +146,6 @@ def main():
     training_loop(batch_size, num_epochs, test_model, optimizer, input_data, poss_matches)
 
 
-    
-    
-    
-def evaluate_predictions():
-    return
 
     
 def main_real():
@@ -164,8 +163,6 @@ def main_real():
     Y = np.genfromtxt(profiles, skip_header =1)[:,1:]
     sevenmers = np.genfromtxt(profiles, skip_header=1)[:, 0]
     ynames = np.array(open(profiles, 'r').readline().strip().split()[1:])
-
-    print(Y.shape)
 
 
     Y = np.nan_to_num(Y).T
@@ -195,11 +192,20 @@ def main_real():
 
 
     yyt = np.dot(Y_train_final, Y_train_final.T)
-
+    #yyt_dev = np.dot(Y_test_final, Y_test_final.T)
+    # project Y_test_final onto Y_train_final to approx proj onto singular vectors
+    yyt_dev = np.dot(Y_test_final, Y_train_final.T)
+    
+    
     print("embs shape", embs_train.shape)
     learned_embs =torch.FloatTensor(embs_train) # torch.randn((213,10))
     poss_matches = torch.FloatTensor(yyt) 
     known_matches = torch.FloatTensor(yyt) 
+    
+    learned_embs_dev =torch.FloatTensor(embs_test) # torch.randn((213,10))
+    poss_matches_dev = torch.FloatTensor(yyt_dev) 
+    known_matches_dev = torch.FloatTensor(yyt_dev) 
+    
 
     test_model = AfinityRegression(emb_dim=250, rna_dim=203)
     #for x in test_model.parameters():
@@ -212,9 +218,10 @@ def main_real():
     
     test_model.init_weights()
     # input_data = (learned_embs, known_matches)
-    batch_size = 5
-    num_epochs = 100000
+    batch_size = args.batch_size
+    num_epochs = args.num_epochs
     input_data = DataLoader(LowDimData(learned_embs, known_matches), batch_size=batch_size)
-    training_loop(batch_size, num_epochs, test_model, optimizer, input_data, poss_matches)    
+    dev_input_data = DataLoader(LowDimData(learned_embs_dev, known_matches_dev), batch_size=batch_size)
+    training_loop(batch_size, num_epochs, test_model, optimizer, input_data, poss_matches, dev_input_data, print_every=args.print_every, eval_every=args.eval_every)    
 if __name__ == '__main__':
     main_real()
