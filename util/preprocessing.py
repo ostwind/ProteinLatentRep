@@ -114,7 +114,6 @@ def one_hot_pickle(df2):
     #print((seq_list[0]))
     #print(label_encoder.inverse_transform(list(range(22))))
     dataset = []
-    possible_symbols = []
     
     for index, seq in enumerate(seq_list):
         values = np.array(list(seq))
@@ -122,7 +121,6 @@ def one_hot_pickle(df2):
         #onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
         #print('integer encoded sequence shape: %s' %(integer_encoded.shape))
         dataset.append(integer_encoded)
-        #possible_symbols = possible_symbols + list(label_encoder.inverse_transform(integer_encoded))
         #print(list(label_encoder.inverse_transform(integer_encoded)))
     #print(set(possible_symbols))
 

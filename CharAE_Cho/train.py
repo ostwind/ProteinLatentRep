@@ -32,7 +32,7 @@ def _add_swap_noise(batch, seq_len ):
     noisy_batch = batch.clone()
     sample_len, num_samples = batch.shape[1], batch.shape[0]
     #total_swaps = sample_len//40 #as per cho, see https://arxiv.org/pdf/1710.11041.pdf @denoising
-    total_swaps = 0
+    total_swaps = 5
     
     for a_swap in range(total_swaps):
         swap_index = np.random.randint( sample_len, size = 1)[0]
@@ -48,7 +48,7 @@ def _add_swap_noise(batch, seq_len ):
     return noisy_batch
 
 def train(model, optimizer, num_epochs, batch_size, learning_rate):
-    #model.load_state_dict(torch.load('./autoencoder.pth'))
+    model.load_state_dict(torch.load('./autoencoder.pth'))
     train_loader, valid_loader = loader()
     
     latent_representation = []
