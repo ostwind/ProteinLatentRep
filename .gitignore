@@ -47,6 +47,7 @@ Thumbs.db
 ####################################
 data/
 TrainedModels/
+TrainedModels*/
 models/
 *.png
 
