@@ -3,7 +3,7 @@ import pickle
 from EncoderCNN import ResNetEncoder
 import torch
 
-combined_RRMs = pd.read_csv('combined_processed_RRM.csv', index_col=0)
+combined_RRMs = pd.read_csv('verified_RRMs.csv', index_col=0)
 
 if not torch.cuda.is_available():
 	encoder = torch.load('encoder-anneal-True-22-1000.pkl', map_location=lambda storage, loc: storage)
