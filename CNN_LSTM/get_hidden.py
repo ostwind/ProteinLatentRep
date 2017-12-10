@@ -53,8 +53,13 @@ def main(args):
         rrms_aligned = to_var(rrms_aligned) 
         rrms_unaligned = to_var(rrms_unaligned)
         
-        features = encoderCNN(rrms_aligned) 
-        hiddens = forward(decoderRNN, features, rrms_unaligned, lengths)
+        features = encoderCNN(rrms_aligned)
+
+        if args.which_representation == 'encoder':
+            hiddens = features
+        else:
+            hiddens = forward(decoderRNN, features, rrms_unaligned, lengths)
+
         hiddens = hiddens.data.cpu().numpy()
         
         if batch_idx == 0:
@@ -78,14 +83,17 @@ if __name__ == '__main__':
     # File paths
     parser.add_argument('--vocab_path', type=str, default='./TrainedModels/vocab.pkl',
                         help='path for pickled vocab')
-    parser.add_argument('--processed_RRM_path', type=str, default='../data/combined_processed_RRM.csv',
+    parser.add_argument('--processed_RRM_path', type=str, default='../data/verified_RRMs.csv',
                         help='path for preprocessed aligned_RRM data')
     parser.add_argument('--encoder_path', type=str, default='./TrainedModels/encoder-anneal-True-22-1000.pkl',
                         help='path for saved trained encoder')
     parser.add_argument('--decoder_path', type=str, default='./TrainedModels/decoder-anneal-True-22-1000.pkl',
                         help='path for saved trained decoder')
-    parser.add_argument('--hidden_path', type=str, default='./TrainedModels/hiddens.csv',
+    parser.add_argument('--hidden_path', type=str, default='./TrainedModels/encoder_side_representation.csv',
                        help='path to save hidden representations')
+
+    parser.add_argument('--which_representation', type=str, default='encoder',
+                       help='whether to get encoder or decoder side representation')
 
     args = parser.parse_args()
     
