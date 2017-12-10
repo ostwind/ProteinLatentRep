@@ -14,6 +14,7 @@ from EncoderCNN import ResNetEncoder
 from RRM_Sequence import RRM_Sequence, collate_fn
 from early_stopping import validate, early_stop
 from train_test_split import train_test_split
+
 def to_var(x, volatile=False):
     if torch.cuda.is_available():
         x = x.cuda()
@@ -26,7 +27,8 @@ def adjust_learning_rate(optimizer, epoch):
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
 
-def main(args):   
+def main(args):
+    # Make a directory to save models
     if not os.path.exists(args.model_path):
         os.makedirs(args.model_path)
     
@@ -36,6 +38,7 @@ def main(args):
     df_aligned = train_test_split(df_aligned)
     with open(os.path.join(args.model_path, 'vocab.pkl'), 'wb') as f:
         pickle.dump(vocab, f)
+        
     # Prepare the training and validation sets
     train_index = pd.read_csv('../data/train_index.csv',header=None).iloc[:,0]
     train_loader = RRM_Sequence(df_aligned.loc[train_index, :], vocab)
@@ -45,13 +48,14 @@ def main(args):
     val_index = pd.read_csv('../data/val_index.csv',header=None).iloc[:,0]
     val_loader = RRM_Sequence(df_aligned.loc[val_index, :], vocab)
     val_loader = DataLoader(val_loader, batch_size=args.batch_size, 
-        shuffle=True, collate_fn=collate_fn)
+                            shuffle=True, collate_fn=collate_fn)
 
     # Define the models
     encoder = ResNetEncoder(df_aligned.shape[1], len(vocab), args.embed_size)
     decoder = DecoderRNN(args.embed_size, args.hidden_size, 
                          len(vocab), args.num_layers)
     
+    # Use CUDA if available
     if torch.cuda.is_available():
         encoder.cuda()
         decoder.cuda()
@@ -106,12 +110,12 @@ def main(args):
                            os.path.join(args.model_path, 'encoder-anneal%s-%dcolumns-%d-%d.pkl' % (
                                args.learning_rate_annealing, df_aligned.shape[1], epoch + 1, batch_idx + 1)))
 
+        # Decay the learning rate if specified
         if args.learning_rate_annealing:
             adjust_learning_rate(optimizer, epoch+1)
 
         if stop:
             break
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -119,6 +123,7 @@ if __name__ == '__main__':
     # Random seed
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
+    
     # File paths
     parser.add_argument('--model_path', type=str, default='./TrainedModels',
                         help='path for saving trained models')
@@ -126,13 +131,14 @@ if __name__ == '__main__':
                         help='path for aligned RRM input file')
     parser.add_argument('--processed_RRM_path', type=str, default='../data/combined_processed_RRM.csv',
                         help='path for outputting processed aligned_RRM data')
-    parser.add_argument('--sep', type=str, default=' ',
-                        help='separator for RRM input file, default is space')
+    
     # Preprocessing settings
     parser.add_argument('--preprocessed', action='store_true', default=False,
                         help='if RRM file is preprocessed')
     parser.add_argument('--top_n', type=int, default=82, 
                         help='include top n most populated positions')
+    parser.add_argument('--sep', type=str, default=' ',
+                        help='separator for RRM input file, default is space')
 
     # Control printing/saving
     parser.add_argument('--log_step', type=int , default=20, #10,
