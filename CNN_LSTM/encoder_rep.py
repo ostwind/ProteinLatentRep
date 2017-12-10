@@ -7,7 +7,7 @@ combined_RRMs = pd.read_csv('combined_processed_RRM.csv', index_col=0)
 # if using CPU
 encoder = torch.load('encoder-anneal-True-22-1000.pkl', map_location=lambda storage, loc: storage)
 # use line below if running on GPU
-# encoder = torch.load('encoder-anneal-True-22-1000.pkl', map_location=lambda storage, loc: storage)
+# encoder = torch.load('encoder-anneal-True-22-1000.pkl)
 
 
 vocab = pickle.load(open('vocab2.pkl', 'rb'))
