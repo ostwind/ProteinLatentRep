@@ -1,3 +1,4 @@
+
 from __future__ import print_function
 import pandas as pd
 import torch
@@ -61,6 +62,7 @@ def main(args):
             hiddens = forward(decoderRNN, features, rrms_unaligned, lengths)
 
         hiddens = hiddens.data.cpu().numpy()
+        # hiddens have shape (16, 64) for encoder, (16, 128) for decoder
         
         if batch_idx == 0:
             df = pd.DataFrame(hiddens)
@@ -81,17 +83,18 @@ if __name__ == '__main__':
                         help='random seed (default: 1)')
 
     # File paths
-    parser.add_argument('--vocab_path', type=str, default='./TrainedModels/vocab.pkl',
+    parser.add_argument('--vocab_path', type=str, default='./TrainedModels_48hr/vocab.pkl',
                         help='path for pickled vocab')
-    parser.add_argument('--processed_RRM_path', type=str, default='../data/verified_RRMs.csv',
+    parser.add_argument('--processed_RRM_path', type=str, default='../data/combined_aligned_processed_RRM.csv',
                         help='path for preprocessed aligned_RRM data')
-    parser.add_argument('--encoder_path', type=str, default='./TrainedModels/encoder-anneal-True-22-1000.pkl',
+    parser.add_argument('--encoder_path', type=str, default='./TrainedModels_48hr/encoder-annealFalse-84columns-45-500.pkl',
                         help='path for saved trained encoder')
-    parser.add_argument('--decoder_path', type=str, default='./TrainedModels/decoder-anneal-True-22-1000.pkl',
+    parser.add_argument('--decoder_path', type=str, default='./TrainedModels_48hr/decoder-annealFalse-84columns-45-500.pkl',
                         help='path for saved trained decoder')
-    parser.add_argument('--hidden_path', type=str, default='./TrainedModels/encoder_side_representation.csv',
+    parser.add_argument('--hidden_path', type=str, default='./TrainedModels_48hr/encoder_reps_aligned_48hrs.csv',
                        help='path to save hidden representations')
 
+    # Representations at encoder stage or decoder stage?
     parser.add_argument('--which_representation', type=str, default='encoder',
                        help='whether to get encoder or decoder side representation')
 
