@@ -9,8 +9,9 @@ import numpy as np
 #backtranslation pass: clean unlabeled data   
 #supervised pass: labeled data with vector to check
 
-def loader( batch_size = 64, shuffle = True, train_portion = 0.9, seq_format = False, 
+def loader( batch_size = 64, shuffle = True, train_portion = 0.95, seq_format = False, 
 data_pickle_path = "./data/data.p", name_pickle_path = "./data/names.p"):
+    np.random.seed(0)
     if not os.path.isfile(data_pickle_path) or not os.path.isfile(name_pickle_path):
         print('data or label pickles missing, preprocessing from raw file @ ../data/PF00076_rp55.txt')
         preprocess(raw_txt_path = './data/combineddata.fasta')

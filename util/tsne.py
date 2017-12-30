@@ -4,10 +4,16 @@ import matplotlib.cm as cm
 import numpy as np 
 
 def tsne(matrix,
-      perplexity = 50, n_iter = 2000, n_components = 3, ): 
+      perplexity = 60, n_iter = 2000, n_components = 3, ): 
       tsne = TSNE(
             n_components= n_components, verbose=1, perplexity=perplexity, n_iter=n_iter)
       return tsne.fit_transform(matrix)
+
+def pca(data, pca_dim = 128 ):
+      from sklearn.decomposition import PCA
+      pca = PCA(n_components=pca_dim)
+      X_pca = pca.fit_transform(data)
+      return X_pca
 
 import plotly.plotly as py
 import plotly.graph_objs as go

@@ -51,7 +51,7 @@ def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
             vals.append( "".join(sequence_filtered) )
 
     if sample_ind: # if position + sample filtered, write fasta version for Seq2Vec
-        #write_fasta(vals, keys, fasta_name = './data/RRM_55_sample_position_filtered.fasta')
+        write_fasta(vals, keys, fasta_name = './data/RRM55_with_labeled.fasta')
         print(len(vals), ' samples made it')
     
     df = pd.DataFrame({'keys': keys, 'vals': vals})
@@ -59,7 +59,7 @@ def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
     
     return df, labeled_df
 
-def _filter_positions(df, threshold = 0.01, plot=False):
+def _filter_positions(df, threshold = 0.02, plot=False):
     seq_list = df['vals'].tolist()
     #print(seq_list[0], len(seq_list))
     
@@ -84,7 +84,7 @@ def _filter_positions(df, threshold = 0.01, plot=False):
     print(sum(keep_pos_ind),'/', len(keep_pos_ind), ' positions made it')
     return keep_pos_ind
 
-def _filter_samples(df, threshold = 0.7, plot = True):
+def _filter_samples(df, threshold = 0.84, plot = False):
     seq_list = df['vals'].tolist()
     
     sample_occupancies, keep_sample_ind =[], []
@@ -110,7 +110,8 @@ def one_hot_pickle(df2):
  
     label_encoder = LabelEncoder()
     #onehot_encoder = OneHotEncoder(sparse=False)
-    label_encoder.fit(  list(set(''.join(seq_list))))
+    label_encoder.fit( ['SOS'] + list(set(''.join(seq_list))))
+    print(label_encoder.transform(['SOS']))
     #print((seq_list[0]))
     #print(label_encoder.inverse_transform(list(range(22))))
     dataset = []
@@ -143,7 +144,7 @@ def _form_proteins(df):
         else:
             protein_dictionary[protein_name][rrm_position] = rrm             
 
-    print(protein_dictionary)
+    #print(protein_dictionary)
 
 
 def preprocess(raw_txt_path = './data/combineddata.fasta'):
@@ -162,10 +163,14 @@ def preprocess(raw_txt_path = './data/combineddata.fasta'):
     #_form_proteins(labeled_df) 
 
     one_hot_pickle(df2)
-
+    
+    count = 0
     thefile = open('test.txt', 'w')
     for item in df2['keys'].tolist():
-      thefile.write("%s\n" % item)
+        if '||' in item:
+            count += 1
+    print(count)
+    #  thefile.write("%s\n" % item)
 
 if __name__ == '__main__':
       preprocess()

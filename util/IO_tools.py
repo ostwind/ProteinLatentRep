@@ -22,3 +22,12 @@ fasta_name,description = None):
 
       from Bio import SeqIO
       SeqIO.write(record, fasta_name, "fasta")
+
+def write_to_csv(name_ordering, proteins, path):
+    import numpy as np 
+    import pandas as pd
+    proteins = np.array(proteins)
+    print('writing latent representation of shape: ', proteins.shape)
+    df = pd.DataFrame(data=proteins,
+              index=name_ordering,)    
+    df.to_csv(path , sep='\t')

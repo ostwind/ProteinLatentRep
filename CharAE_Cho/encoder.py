@@ -14,9 +14,8 @@ class rnn_encoder(nn.Module):
         input = input.contiguous().view(1, 64, self.hidden_size)#input.transpose(0,2).transpose(2,1)
         #print(input.data.shape, hidden.data.shape)
         output = input
-        for i in range(self.n_layers):
-            output, hidden = self.gru(output, 
-            hidden)
+        #for i in range(self.n_layers):
+        output, hidden = self.gru(output, hidden)
         return output, hidden
 
     def initHidden(self):
@@ -27,20 +26,22 @@ class cnn_encoder(nn.Module):
         super(cnn_encoder, self).__init__()
         self.filter_size_range = filter_widths
         self.char_embedding_dim = char_embedding_dim
-        self.num_filters_per_width = num_filters_per_width  #possible sizes * num_filters = decoder hidden size
+        #self.num_filters_per_width = num_filters_per_width  #possible sizes * num_filters = decoder hidden size
 
         # 1 conv layer with dynamic padding 
         # this enable kernels with varying widths a la Cho's NMT (2017) 
         self.filter_banks = [] 
-        for k in self.filter_size_range:
+        for k, cur_num in zip(self.filter_size_range, num_filters_per_width):
             padding = k //2 
             
             self.k_filters = nn.Conv2d(
-                    1, self.num_filters_per_width, 
+                    1, cur_num, 
                     # for kernel and padding the dimensions are (H, W)
                     (self.char_embedding_dim, k), padding=(0, padding), 
                     stride=1)  
             self.filter_banks.append( self.k_filters )
+
+        self.filter_banks = nn.ModuleList(self.filter_banks)
 
         self.pool = nn.MaxPool1d( 3 , return_indices=True)  
 
@@ -74,14 +75,5 @@ class cnn_encoder(nn.Module):
 
         activation_tensor = torch.cat(all_activations, 1)
         all_unpool_indices = torch.cat(all_unpool_indices, 1)
-        # if collect_filters:
-        #     activations_dir = './CharAE_Cho/activations/'
-        #     for i in range(2000):
-        #         if os.path.isfile(activations_dir + '%s.p' %(i)):
-        #             continue
-        #         pickle.dump( activation_tensor.data.squeeze(2).numpy(), 
-        #         open( activations_dir + "%s.p" %(i), "wb" ) )
-        #         pickle.dump( all_unpool_indices.data.squeeze(2).numpy(), 
-        #         open( activations_dir + "%spool.p" %(i), "wb" ) )
-        #         break
+       
         return activation_tensor#, all_unpool_indices 

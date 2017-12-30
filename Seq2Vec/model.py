@@ -10,8 +10,8 @@ from util import *
 class Seq2Vec(doc2vec.Doc2Vec):
     def __init__(self,embedding_path = None,
      fasta_path = None, data_dir = None,
-    window_size=3, size=100, window=20,
-    min_count=2, workers=4, epochs = 10):
+    window_size=3, size=300, window=30,
+    min_count=2, workers=4, epochs = 20):
 
         self.embedding_path = embedding_path
         if not embedding_path:

@@ -1,33 +1,37 @@
 from CharAE_Cho import *
 from encoder import cnn_encoder, rnn_encoder
 from decoder import AttnDecoderRNN
+import random 
 
 class CharLevel_autoencoder(nn.Module):
       def __init__(self, criterion):#, seq_len):
             super(CharLevel_autoencoder, self).__init__()
             self.char_embedding_dim = 64
-            self.filter_widths = list(range(1, 7)) 
-            self.num_filters_per_width = 20 # too wide leads to memorization
+            self.filter_widths = list(range(1, 8)) 
+            self.num_filters_per_width = [40, 40, 80, 80, 40, 40, 40] # too wide leads to memorization
             # TODO experiment with more conv layers
-            self.encoder_embedding = nn.Embedding(22, self.char_embedding_dim)
+            self.encoder_embedding = nn.Embedding(23, self.char_embedding_dim)
             self.cnn_encoder = cnn_encoder(
             filter_widths = self.filter_widths,
             num_filters_per_width = self.num_filters_per_width,
             char_embedding_dim = self.char_embedding_dim)
             #seq_len = self.seq_len)
             
-            self.decoder_hidden_size = len(self.filter_widths) * self.num_filters_per_width
+            self.decoder_hidden_size = int(np.sum(np.array(self.num_filters_per_width)) )#len(self.filter_widths) * self.num_filters_per_width
             self.rnn_encoder = rnn_encoder( 
             hidden_size = self.decoder_hidden_size )
 
-            #self.rnn_emits_len = 1
-            self.decoder_embedding = nn.Embedding(22, self.decoder_hidden_size)
+            self.decoder_embedding = nn.Embedding(23, self.decoder_hidden_size)
             self.attention_decoder = AttnDecoderRNN(
-                  hidden_size = self.decoder_hidden_size, output_size = 84//3)
+                  hidden_size = self.decoder_hidden_size, seq_len = 78//3)
             self.criterion = criterion
 
       def encode(self, data, seq_len, collect_filters = False):
-            encoder_embedded = self.encoder_embedding(data).unsqueeze(1).transpose(2,3) 
+            encoder_embedded = self.encoder_embedding(data)
+            #print(encoder_embedded.data.shape)
+            encoder_embedded = encoder_embedded.unsqueeze(1).transpose(2,3) 
+            #print(encoder_embedded.data.shape)
+            
             encoded = self.cnn_encoder.forward(encoder_embedded, seq_len, collect_filters)
             encoded = encoded.squeeze(2)
       
@@ -37,45 +41,42 @@ class CharLevel_autoencoder(nn.Module):
             
             # 2 times hidden size for bi-directional gru 
             encoder_outputs = Variable(torch.zeros(64, seq_len//3, 2*self.decoder_hidden_size))
-            for symbol_ind in range(seq_len//3):#self.rnn_emits_len): 
+            for symbol_ind in range(seq_len//3): 
                   output, encoder_hidden = self.rnn_encoder.forward(
                         encoded[:,:,symbol_ind], encoder_hidden)
                   #print(output.data.shape) # (81, 64, 128)
                   encoder_outputs[:, symbol_ind,:] = output[0]
             return encoder_outputs, encoder_hidden
 
-      def decode(self, noisy_data, target_data, encoder_hidden, encoder_outputs, seq_len):   
-            loss = 0
+
+      def decode(self, target_data, encoder_hidden, encoder_outputs, seq_len, i = False):   
+            use_teacher_forcing = True if random.random() < 0.6 else False
+            if type(i) != bool: # given batch  index, then eval mode, no teacher forcing
+                  use_teacher_forcing = False
+            
             decoder_hidden = encoder_hidden
-            #print(target_data.data.shape)
-            for amino_acid_index in range(seq_len): 
-                  target_amino_acid = target_data[ :, :, amino_acid_index]#.long()
-                  decoder_input = noisy_data.data[:, amino_acid_index].unsqueeze(1)#.transpose(0,1)    
-                  decoder_embedded = self.decoder_embedding(decoder_input)
-                 
+            input_embedded = Variable(torch.LongTensor([17]).repeat(64))
+            # if self.use_cuda:
+            #       input_embedded = input_embedded.cuda()
+            input_embedded = self.decoder_embedding( input_embedded )
+            
+            output = []
+            for symbol_index in range(seq_len): 
                   # # current symbol, current hidden state, outputs from encoder 
                   decoder_output, decoder_hidden, attn_weights = self.attention_decoder.forward(
-                  decoder_embedded, decoder_hidden, encoder_outputs, seq_len//3)
-                  #print(decoder_output.data.shape, target_amino_acid.data.shape)   # torch.Size([64, 23])
+                  input_embedded, decoder_hidden, encoder_outputs, seq_len//3)
                   
-                  loss += self.criterion(
-                        decoder_output,
-                        Variable(target_amino_acid) ) 
-            return loss 
+                  if use_teacher_forcing:
+                        input_symbol = Variable(target_data[:, symbol_index])
 
-# preliminary model
-# class cnn_autoencoder(nn.Module):
-#       def __init__(self):
-#             super(cnn_autoencoder, self).__init__()
-#             self.encoder = cnn_encoder()
-#             self.decoder = cnn_decoder()
-#             self.embedding = nn.Embedding(22, 4)
+                  else:
+                        values, input_symbol = decoder_output.max(1)
+                  input_embedded = self.decoder_embedding( input_symbol )
+                  
+                  output.append( decoder_output )
             
-#       def encode(self, data):
-#             char_embeddings = self.embedding(data).unsqueeze(1).transpose(2,3) 
-#             encoded, unpool_indices = self.encoder.forward(char_embeddings)
-#             return encoded, unpool_indices
-
-#       def decode(self, data, unpool_indices):
-#             reconstructed = self.decoder.forward(data, unpool_indices)
-#             return reconstructed
+            predicted = torch.stack(output, dim=2).view(-1, 23)
+            loss = self.criterion(
+                  predicted,
+                  Variable(target_data.view(-1)) )
+            return loss 
