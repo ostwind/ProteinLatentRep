@@ -23,22 +23,27 @@ class AfinityRegression(nn.Module):
         # want to learn weights after applying to embedding layer (First do RW , then RW A^T)
         self.lin1 = nn.Linear(emb_dim, rna_dim)
         self.lin2 = nn.Linear(rna_dim, emb_dim)
+        self.lin3 = nn.Linear(emb_dim, emb_dim)
     
     def init_weights(self):
         for x in self.lin1.parameters():
             x.data = x.data.normal_(0.0, 0.02)
         return None
     
-    def forward(self, batch_size, embs, rna_samples):
-        self.batch_size = batch_size
-        x = self.lin2(rna_samples)
-        x = torch.matmul(embs, x.t())
-        return x
-    
-    
     def forward_old(self, batch_size, embs, rna_samples):
         self.batch_size = batch_size
-        x = self.lin1(embs)
-        x = torch.matmul(x, rna_samples)
-
+        print("a: ", rna_samples.size())
+        x = self.lin2(rna_samples)
+        print("b: ", x.size())
+        x = torch.matmul(embs, x.t())
+        print("c: ", x.size())
         return x
+    
+    
+    def forward(self, batch_size, embs, rna_samples):
+        self.batch_size = batch_size
+        x = self.lin3(embs)
+        x = torch.matmul(x, rna_samples)
+        return x
+    
+    

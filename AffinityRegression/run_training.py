@@ -27,8 +27,10 @@ def create_parser(args_in=None):
     parser.add_argument('--eval_every', type=int, default=5000, help="print auc on dev set every iterations (default: 5000)")
     parser.add_argument('--print_every', type=int, default=100, help="print auc on dev set every iterations (default: 5000)")
     parser.add_argument('--batch_size', type=int, default=16, help="batch size (default 16)")
-    parser.add_argument('--num_epochs', type=int, default=2000, help="batch size (default 16)")
-    
+    parser.add_argument('--num_epochs', type=int, default=800000, help="batch size (default 16)")
+    parser.add_argument('--emb_dim', type=int, default=250, help="batch size (default 16)")
+    parser.add_argument('--rna_dim', type=int, default=203, help="batch size (default 16)")
+    parser.add_argument('--use_cuda', action='store_true', help="batch size (default 16)")
 
     
     
@@ -169,8 +171,11 @@ def main_real():
     D = []
     datnames= ynames
 
-    Y_train, Y_test, trainprots, testprots = original_script_dataset_processing(ynames,Y, arg1="0", arg2=file_2)
-    if emb_file == "hidden.csv":
+    Y_train, Y_test, trainprots, testprots = original_script_dataset_processing(ynames,Y, 
+                                                                                arg1="0", 
+                                                                                arg2=file_2
+                                                                               )
+    if emb_file == "hiddens.csv":
         learned_embs_df = pd.read_csv(emb_file)
     else:
         learned_embs_df = pd.read_csv(emb_file, sep='\t')
@@ -199,17 +204,30 @@ def main_real():
     
     print("embs shape", embs_train.shape)
     learned_embs =torch.FloatTensor(embs_train) # torch.randn((213,10))
-    poss_matches = torch.FloatTensor(yyt) 
+    # replacing YYT on LHS with transposed embeddings 
+    poss_matches = torch.FloatTensor(embs_train.T) 
+
     known_matches = torch.FloatTensor(yyt) 
     
     learned_embs_dev =torch.FloatTensor(embs_test) # torch.randn((213,10))
     poss_matches_dev = torch.FloatTensor(yyt_dev) 
     known_matches_dev = torch.FloatTensor(yyt_dev) 
     
-
-    test_model = AfinityRegression(emb_dim=250, rna_dim=203)
+    (args.rna_dim, args.emb_dim) = embs_train.shape
+    test_model = AfinityRegression(emb_dim=args.emb_dim, rna_dim=args.rna_dim)
     #for x in test_model.parameters():
     #    x.data = x.data.normal_(0.0, 0.5)
+    
+    
+    if args.use_cuda:
+        learned_embs = learned_embs.cuda()
+        poss_matches = poss_matches.cuda()
+        known_matches = known_matches.cuda()
+        learned_embs_dev = learned_embs_dev.cuda()
+        poss_matches_dev = poss_matches_dev.cuda()
+        known_matches_dev = known_matches_dev.cuda()
+        test_model.cuda()
+    
     
     if args.optim =='adam':
         optimizer = optim.Adam(test_model.parameters(), lr=args.lr, betas=(0.5, 0.999))
