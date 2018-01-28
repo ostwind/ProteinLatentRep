@@ -12,7 +12,6 @@ def protein_rna_map(lookup_file_path = './data/protein_rna_map.txt'):
 
 def write_fasta(list_of_sequences, list_of_ids, 
 fasta_name,description = None):
-      
       record = []
       for sequence, name in zip(list_of_sequences, list_of_ids):
             record.append(

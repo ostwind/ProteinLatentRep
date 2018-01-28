@@ -75,16 +75,9 @@ class Seq2Vec(doc2vec.Doc2Vec):
 '''
 word2vec + biological sequence = BioVec (original paper)
 word2vec + amino-acid sequences = Protvec
-DNA2Vec (?) is an extension w/ sequence lengths varying from 3 to 5 (I think)
 doc2vec + amino-acid sequences = Seq2Vec (current implementation)
 
-SEQ2VEC PAPER @ http://dtmbio.net/dtmbio2016/pdf/11.pdf says:
-dbow (faster, preferred for large corpus) vs distributed memory
-context window size
-vector space dimension, hierarchical softmax and/or
-negative sampling for learning procedure, and the threshold
-for sub-sampling high-frequency words are all selected using
-cross-validation.
+SEQ2VEC PAPER @ http://dtmbio.net/dtmbio2016/pdf/11.pdf 
 '''
 def split_ngrams(seq, n):
     """

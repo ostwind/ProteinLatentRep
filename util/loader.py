@@ -31,10 +31,8 @@ data_pickle_path = "./data/data.p", name_pickle_path = "./data/names.p"):
 
     train_dataset = dataset[ uniform_sampling < train_portion]
     train_labels = name_indices[  uniform_sampling < train_portion]
-    #print(train_labels.shape, train_dataset.dtype)
     valid_dataset = dataset[ uniform_sampling >= train_portion ]
     valid_labels = name_indices[  uniform_sampling >= train_portion]
-    #print(train_dataset.shape, type(train_dataset))
 
     #print(len(train_dataset[0]), len(train_dataset[4]))
     source = TensorDataset(torch.from_numpy(train_dataset), 
