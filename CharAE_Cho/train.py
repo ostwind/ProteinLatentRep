@@ -21,9 +21,9 @@ parser.add_argument('--swap_noise', metavar='L', type = int, default= 0,
                    help='number of symbol swaps for model to denoise')
 args = parser.parse_args()
 
-model_path = './6_pool.pth'
+model_path = './C_C.pth'
 num_epochs, seq_len = args.epochs, args.seq_len
-learning_rate = 0.001/2
+learning_rate = 0.001
 
 criterion = nn.CrossEntropyLoss()
 model = CharLevel_autoencoder(criterion, seq_len, layers = args.archi )
@@ -31,7 +31,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
                             weight_decay=1e-5)
 
 def train(model, optimizer, num_epochs):
-    #model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path))
     train_loader, valid_loader = loader()
     validation_loss_history, model_states = [], []
     
@@ -45,12 +45,11 @@ def train(model, optimizer, num_epochs):
                 activations, unpool_indices = model.Conv_encode(embedded)
                 loss = model.Conv_decode(data, activations, unpool_indices)
 
-            if args.archi == 'R_R':
-                encoder_outputs, encoder_hidden = model.GRU_encode(embedded)
-                loss = model.GRU_decode(data, encoder_hidden, encoder_outputs)
-
             else:
-                encoder_outputs, encoder_hidden = model.NMT_encode(embedded)
+                if args.archi == 'R_R':
+                    encoder_outputs, encoder_hidden = model.GRU_encode(embedded)
+                else:
+                    encoder_outputs, encoder_hidden = model.NMT_encode(embedded)
                 loss = model.GRU_decode(data, encoder_hidden, encoder_outputs)
             
             if index % 100 == 0:
@@ -75,7 +74,7 @@ def train(model, optimizer, num_epochs):
             optimizer.step()
 
         # ===================log========================
-        #torch.save(model.state_dict(), model_path)
+        torch.save(model.state_dict(), model_path)
         #print('epoch [{}/{}], loss:{:.4f}'
         #    .format(epoch+1, num_epochs, loss.data[0]))
         print('________________ epoch ', epoch, ' _______________' )
@@ -87,17 +86,16 @@ def evaluate(model, valid_loader):
     for index, (data, label) in enumerate(valid_loader):
         data = Variable(data, volatile = True)
         embedded = model.Embed_encode(data)     
-        
+ 
         if args.archi == 'C_C':
             activations, unpool_indices = model.Conv_encode(embedded)
             loss = model.Conv_decode(data, activations, unpool_indices)
 
-        if args.archi == 'R_R':
-            encoder_outputs, encoder_hidden = model.GRU_encode(embedded)
-            loss = model.GRU_decode(data, encoder_hidden, encoder_outputs)
-
-        else:        
-            encoder_outputs, encoder_hidden = model.NMT_encode(embedded)
+        else:
+            if args.archi == 'R_R':
+                encoder_outputs, encoder_hidden = model.GRU_encode(embedded)    
+            else:        
+                encoder_outputs, encoder_hidden = model.NMT_encode(embedded)
             loss = model.GRU_decode( data, encoder_hidden, encoder_outputs)
         return loss.data[0]
 

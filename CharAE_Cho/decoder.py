@@ -71,9 +71,7 @@ class cnn_decoder(nn.Module):
         for k, num_filters, deconv_layer in zip(
             self.filter_widths, self.filter_config, self.deconv_layers):
             #print(x.data.shape, filter_width_index, filter_width_index + num_filters)
-            activation_to_deconvolve = x[:, filter_width_index:filter_width_index+num_filters,:].unsqueeze(2) 
-            #print(activation_to_deconvolve.data.shape)
-            
+            activation_to_deconvolve = x[:, filter_width_index:filter_width_index+num_filters,:].unsqueeze(2)  
             activation_to_deconvolve = deconv_layer(activation_to_deconvolve)[:, : , :, :78]
             #print(activation_to_deconvolve.data.shape)
             deconvolved.append(activation_to_deconvolve)
@@ -82,7 +80,7 @@ class cnn_decoder(nn.Module):
         deconvolved = torch.cat(deconvolved, 1)
         deconvolved = deconvolved.view(64, -1, 78).transpose(1,2)
 
-        x = self.linear( deconvolved )
+        x = self.linear( deconvolved ).view(64*78, 23)
         #x = self.linear( x.transpose(1,2) )
         #print(x.data.shape) # 64 X 78 X 23
         

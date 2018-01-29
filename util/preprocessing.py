@@ -82,7 +82,7 @@ def _filter_positions(df, threshold = 0.0225, plot=False):
     print(sum(keep_pos_ind),'/', len(keep_pos_ind), ' positions made it')
     return keep_pos_ind
 
-def _filter_samples(df, threshold = 0.8, plot = True):
+def _filter_samples(df, threshold = 0.8, plot = False):
     seq_list = df['vals'].tolist()
     
     sample_occupancies, keep_sample_ind =[], []
@@ -103,7 +103,7 @@ def _filter_samples(df, threshold = 0.8, plot = True):
 
     return keep_sample_ind  
 
-def one_hot_pickle(df2):
+def one_hot_pickle(df2, path):
     seq_list, name_list = df2['vals'].tolist(), df2['keys'].tolist()
  
     label_encoder = LabelEncoder()
@@ -119,8 +119,8 @@ def one_hot_pickle(df2):
         dataset.append(integer_encoded)
         #print(list(label_encoder.inverse_transform(integer_encoded)))
     
-    pickle.dump( np.array(dataset), open( "./data/data.p", "wb" ) )
-    pickle.dump( np.array(name_list), open( "./data/names.p", "wb" ) )
+    pickle.dump( np.array(dataset), open( path + "data.p", "wb" ) )
+    pickle.dump( np.array(name_list), open( path + "names.p", "wb" ) )
 
 def preprocess(raw_txt_path = './data/combineddata.fasta'):
     assert os.path.isfile(raw_txt_path), '%s not found!' %(raw_txt_path)
@@ -134,20 +134,37 @@ def preprocess(raw_txt_path = './data/combineddata.fasta'):
     sample_ind = _filter_samples(df1)
     df2 = txt_to_csv(raw_txt_path, position_ind = position_ind,
     sample_ind = sample_ind,)
-    df2 = df2.drop_duplicates(subset='keys', keep="last")       
-    df2 = df2.drop_duplicates(subset='vals', keep="last")
-    print(df2.shape, ' samples made it')
+    df2 = df2.drop_duplicates(subset='vals', keep="last") # 68771 -> 52052
+    print(df2.shape, ' samples made it')    
+
+    ################ aligned/unaligned/delimited ###################3
+    original_len = len(df2['vals'][0])
+    
+    #df2['vals'] = df2['vals'].str.replace('\-\-+', '-') + ''.join( ['-' for i in range(78)] )
+    '''
+    VFLGGV-----EA----TF--------W-------------------G-YLVFELEKSVRSLL--C------------
+    VFLGGV-EA-TF-W-G-YLVFELEKSVRSLL-C---------------------------------------------
+    '''
+    
+    df2['vals'] = df2['vals'].str.replace('\-', '') + ''.join( ['-' for i in range(original_len)] )
+    '''
+    VFLGGV-----EA----TF--------W-------------------G-YLVFELEKSVRSLL--C------------
+    VFLGGVEATFWGYLVFELEKSVRSLLC---------------------------------------------------
+    '''
+    
+    df2['vals'] = df2['vals'].apply(lambda x: x[:78])
+    
+    #################################################
+
+    one_hot_pickle(df2, path = './data/unaligned/')
     
 
-
-    one_hot_pickle(df2)
-    
-    count = 0
-    thefile = open('test.txt', 'w')
-    for item in df2['keys'].tolist():
-        if '||' in item:
-            count += 1
-    print(count)
+    # count = 0
+    # thefile = open('test.txt', 'w')
+    # for item in df2['keys'].tolist():
+    #     if '||' in item:
+    #         count += 1
+    # print(count)
     #  thefile.write("%s\n" % item)
 
     #sorted_proteins = df2['vals'].tolist()

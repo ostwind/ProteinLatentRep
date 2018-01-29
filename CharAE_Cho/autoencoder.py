@@ -14,7 +14,7 @@ class CharLevel_autoencoder(nn.Module):
                   self.emit_len = seq_len
 
             self.layers = layers    
-            self.char_embedding_dim = 64
+            self.char_embedding_dim = 16
             self.encoder_embedding = nn.Embedding(23, self.char_embedding_dim)
             
             self.filter_widths = list(range(1, 8))
@@ -98,9 +98,6 @@ class CharLevel_autoencoder(nn.Module):
       
       def Conv_decode(self, target_data, pooled_activations, unpool_indices):
             prediction =  self.deconv_decoder( pooled_activations, unpool_indices )
-            #print(target_data, prediction)
             target_data = target_data.view(-1)
-            prediction = prediction.view(64*78, 23)
-            
             loss = self.criterion( prediction, target_data )
             return loss
