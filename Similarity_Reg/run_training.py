@@ -6,14 +6,14 @@ from torch import optim
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 from Bio import SeqIO
-from affinity_regression import AfinityRegression
+from similarity_regression import SimilarityRegression
 from data_loading import LowDimData
 from train import training_loop
 import pandas as pd
 import argparse
 
 def create_parser(args_in=None):
-    parser = argparse.ArgumentParser(description="Affinity Regression")
+    parser = argparse.ArgumentParser(description="Similarity Regression")
     parser.add_argument('--dtype', type=str, default='--z', help="dtype for loading original data")
     parser.add_argument('--profiles', type=str, default="../dropbox_files/Fullset_z_scores_setAB.txt", help="profiles")
     parser.add_argument('--probefeatures', type=str, default="ones", help="profiles")
@@ -43,35 +43,29 @@ def create_parser(args_in=None):
 
 
 def original_script_dataset_processing(datnames,Y, arg1="0(,24,48...)", arg2=""):
+    """
+    Data processing script from Alex's Affinity regression files
+    Gets binding preference expressions for protein names, splits into train
+    and test sets based on predefined cuts.
+    datnames: Protein names to filter for
+    Y: Binding preference matrix
+    """
     numset = arg1
     trainfile = arg2
-    
     print( "trainset:", trainfile, numset)
     tobj = open(trainfile, 'r')
     tlines = tobj.readlines()
     for i, tline in enumerate(tlines):
-#         print(tline[:6], tline[:6]=="###Set")
-#         if tline[:6]=="###Set":
-#             print(tline.strip().split()[-1])
         if tline[:6]=="###Set" and tline.strip().split()[-1] == numset:
             print(i)
             trainprots = np.array([tlines[i+2].strip().split(), tlines[i+3].strip().split()]).T
             testprots = np.array([tlines[i+5].strip().split(), tlines[i+6].strip().split()]).T
-#             break
-#         else:
-#             continue
-
-                        ### sort into training and test set
             if len(np.intersect1d(trainprots[:,0], datnames)) !=0:
                 trainprots = trainprots[:,0]
                 testprots = testprots[:,0]
             else: 
                 trainprots = trainprots[:,1]
                 testprots = testprots[:,1]
-#             print('trainprots: \n')
-#             print(trainprots)
-#             print('testprots: \n')
-#             print(testprots)
             indexestrain = []
             indexestest = []
             for i, ina in enumerate(datnames):
@@ -81,15 +75,10 @@ def original_script_dataset_processing(datnames,Y, arg1="0(,24,48...)", arg2="")
                     indexestest.append(i)
             indexestrain = np.array(indexestrain)
             indexestest = np.array(indexestest)
-#             print('indexestrain: \n')
-#             print(indexestrain)
             Ytrain = Y[indexestrain]
-#             Ptrain = P[indexestrain]
             Ytest = Y[indexestest]
-#             Ptest = P[indexestest]
             trainprots = datnames[indexestrain]
             testprots = datnames[indexestest]
-
             print (np.shape(Ytest)) #, np.shape(Ptest))
             print( np.shape(Ytrain)) #, np.shape(Ptrain))
     return Ytrain, Ytest, trainprots, testprots #Ptrain, Ytest, Ptest
@@ -131,14 +120,14 @@ def filter_embs(Y, protnames, le_df):
     
 
 
-def main():
+def main_test():
     # dummy data
-    print("Testing functionality of Affinity Regression")
+    print("Testing functionality of Similarity Regression")
     learned_embs = torch.randn((777,10))
     poss_matches = torch.randn((2555, 30))
     known_matches = torch.randn((777,30))
 
-    test_model = AfinityRegression(emb_dim=10, rna_dim=2555)
+    test_model = SimilarityRegression(emb_dim=10, rna_dim=2555)
     optimizer = SGD(test_model.parameters(), lr = 0.001)
     test_model.init_weights()
     # input_data = (learned_embs, known_matches)
@@ -150,10 +139,11 @@ def main():
 
 
     
-def main_real():
+def main():
     args = create_parser()
     print(args)
-
+    
+    # naming variables for convenience with legacy code
     dtype = args.dtype # '--z' #sys.argv[sys.argv.index("--data")+1]
     profiles = args.profiles # "../dropbox_files/Fullset_z_scores_setAB.txt" #sys.argv[sys.argv.index("--data")+2]
     probefeatures = args.probefeatures # "ones" #sys.argv[sys.argv.index("--data")+3]
@@ -214,7 +204,7 @@ def main_real():
     known_matches_dev = torch.FloatTensor(yyt_dev) 
     
     (args.rna_dim, args.emb_dim) = embs_train.shape
-    test_model = AfinityRegression(emb_dim=args.emb_dim, rna_dim=args.rna_dim)
+    test_model = SimilarityRegression(emb_dim=args.emb_dim, rna_dim=args.rna_dim)
     #for x in test_model.parameters():
     #    x.data = x.data.normal_(0.0, 0.5)
     
@@ -238,8 +228,21 @@ def main_real():
     # input_data = (learned_embs, known_matches)
     batch_size = args.batch_size
     num_epochs = args.num_epochs
-    input_data = DataLoader(LowDimData(learned_embs, known_matches), batch_size=batch_size)
-    dev_input_data = DataLoader(LowDimData(learned_embs_dev, known_matches_dev), batch_size=batch_size)
-    training_loop(batch_size, num_epochs, test_model, optimizer, input_data, poss_matches, dev_input_data, print_every=args.print_every, eval_every=args.eval_every)    
+    input_data = DataLoader(LowDimData(learned_embs, 
+                                       known_matches), 
+                            batch_size=batch_size)
+    dev_input_data = DataLoader(LowDimData(learned_embs_dev, 
+                                           known_matches_dev), 
+                                batch_size=batch_size)
+    training_loop(batch_size, 
+                  num_epochs, 
+                  test_model, 
+                  optimizer, 
+                  input_data, 
+                  poss_matches, 
+                  dev_input_data, 
+                  print_every=args.print_every, 
+                  eval_every=args.eval_every)    
+
 if __name__ == '__main__':
-    main_real()
+    main()
