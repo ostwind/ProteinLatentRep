@@ -14,7 +14,7 @@ class CharLevel_autoencoder(nn.Module):
                   self.emit_len = seq_len
 
             self.layers = layers    
-            self.char_embedding_dim = 16
+            self.char_embedding_dim = 32
             self.encoder_embedding = nn.Embedding(23, self.char_embedding_dim)
             
             self.filter_widths = list(range(1, 8))
@@ -78,15 +78,18 @@ class CharLevel_autoencoder(nn.Module):
 
             return encoder_outputs, encoder_hidden
 
-      def GRU_decode(self, target_data, encoder_hidden, encoder_outputs, attention = True):   
+      def GRU_decode(self, target_data, encoder_hidden, encoder_outputs,
+       dont_return = True, attention = True):   #index for output purposes
             decoder_hidden = encoder_hidden
             input_embedded = Variable(torch.LongTensor([17]).repeat(64)) # SOS token
             input_embedded = self.decoder_embedding( input_embedded )
             
             sequence_loss = 0
+            attentions = torch.FloatTensor(64, 78, 78) ##
+
             for symbol_index in range(self.seq_len): 
                   # # current symbol, current hidden state, outputs from encoder 
-                  decoder_output, decoder_hidden = self.attention_decoder.forward(
+                  decoder_output, decoder_hidden, attn_weights = self.attention_decoder.forward(
                   input_embedded, decoder_hidden, encoder_outputs, attention)
                   values, input_symbol = decoder_output.max(1)
                   
@@ -94,7 +97,14 @@ class CharLevel_autoencoder(nn.Module):
                   
                   sequence_loss += self.criterion( 
                         decoder_output, target_data[:,symbol_index] )  
-            return sequence_loss 
+                  
+                  attentions[:,:,symbol_index] = attn_weights.data ##
+
+            if dont_return:
+                  return sequence_loss
+
+            #print(attn_weights)
+            return sequence_loss, attentions ##
       
       def Conv_decode(self, target_data, pooled_activations, unpool_indices):
             prediction =  self.deconv_decoder( pooled_activations, unpool_indices )

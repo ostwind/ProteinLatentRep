@@ -107,8 +107,15 @@ def one_hot_pickle(df2, path):
     seq_list, name_list = df2['vals'].tolist(), df2['keys'].tolist()
  
     label_encoder = LabelEncoder()
-    label_encoder.fit( ['SOS'] + list(set( ''.join(seq_list ) ) ) )
-    print('SOS token int encoded as: ', label_encoder.transform(['SOS']))
+    
+    symbols = ['SOS'] + list(set( ''.join(seq_list ) ) )
+    label_encoder.fit( symbols )
+
+    integers = label_encoder.transform(symbols)
+    pickle.dump( dict(zip(integers, symbols)), open( "./data/integer_to_symbol_dictionary.p", "wb") )
+
+    print(dict(zip(integers, symbols)) )
+    #print('SOS token int encoded as: ', label_encoder.transform(['SOS']))
     
     dataset = []
     

@@ -23,7 +23,7 @@ class rnn_decoder(nn.Module):
             all_info = ( torch.cat((embedded, hidden), 1) ) # 64 X (3*64)
             #print(embedded.data.shape, hidden.data.shape )
             attn_weights = F.softmax( self.attn( all_info ), dim =  1 )# 64 X 78 
-
+            #print(attn_weights)
             attn_applied = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs).squeeze(1) 
             
             output = torch.cat((embedded, attn_applied), 1)
@@ -40,7 +40,7 @@ class rnn_decoder(nn.Module):
         #print(output.data.shape)
         output = self.out(output).squeeze(0)#.float()
 
-        return output, hidden
+        return output, hidden, attn_weights
 
 class cnn_decoder(nn.Module): 
     def __init__(self, filter_widths, filter_config, emit_len):

@@ -17,11 +17,15 @@ parser.add_argument('--archi', metavar='M', type = str, default= 'CR_R',
                    help='autoencoder layout')
 parser.add_argument('--seq_len', metavar='L', type = int, default= 78,
                    help='autoencoder layout')
-parser.add_argument('--swap_noise', metavar='L', type = int, default= 0,
-                   help='number of symbol swaps for model to denoise')
+parser.add_argument('--alignment', metavar='L', type = str, default= 'aligned',
+                   help='aligned, unaligned, delimited')
+
+
+# parser.add_argument('--swap_noise', metavar='L', type = int, default= 0,
+#                   help='number of symbol swaps for model to denoise')
 args = parser.parse_args()
 
-model_path = './C_C.pth'
+model_path = './%s_%s.pth' %(args.archi, args.alignment)
 num_epochs, seq_len = args.epochs, args.seq_len
 learning_rate = 0.001
 
@@ -32,7 +36,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
 
 def train(model, optimizer, num_epochs):
     model.load_state_dict(torch.load(model_path))
-    train_loader, valid_loader = loader()
+    train_loader, valid_loader = loader(args.alignment)
     validation_loss_history, model_states = [], []
     
     for epoch in range(num_epochs):
@@ -56,7 +60,7 @@ def train(model, optimizer, num_epochs):
                 print(epoch, index, loss.data[0])
                 valid_loss = evaluate(model, valid_loader)
                 print('validation loss: ', valid_loss )
-
+                
                 validation_loss_history.append(valid_loss)
                 steps_considered = 5
                 model_states.append( model.state_dict() )
@@ -79,7 +83,7 @@ def train(model, optimizer, num_epochs):
         #    .format(epoch+1, num_epochs, loss.data[0]))
         print('________________ epoch ', epoch, ' _______________' )
     
-    torch.save(model_states[-1], model_path)
+    #torch.save(model_states[-1], model_path)
 
 def evaluate(model, valid_loader):
     model.eval()
@@ -100,7 +104,7 @@ def evaluate(model, valid_loader):
         return loss.data[0]
 
 if __name__ == '__main__':
-    train(model, optimizer, num_epochs)
+    #train(model, optimizer, num_epochs)
     print('____________________extracting latent rep___________________')
     rep_path, indices_path = extract_latent_rep(model, args, model_path)
     #filter(rep_path, indices_path)
