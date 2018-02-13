@@ -8,7 +8,7 @@ from torch.utils.data.dataset import Dataset
 from Bio import SeqIO
 
 
-# # affinity regression:
+# # Similarity regression:
 
 # # RWA^T = Y
 # # R:  low-level embeddings
@@ -17,7 +17,7 @@ from Bio import SeqIO
 # # Y: known matches
 ## following class returns LHS 
 
-class AfinityRegression(nn.Module):
+class SimilarityRegression(nn.Module):
     def __init__(self, emb_dim, rna_dim):
         super(AfinityRegression, self).__init__()
         # want to learn weights after applying to embedding layer (First do RW , then RW A^T)

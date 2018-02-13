@@ -1,7 +1,7 @@
-# Affinity Regression
+# Similarity Regression
 
 
-To run affinity regression:
+To run similarity regression:
 ```
 python run_training.py --emb_file=10ep_12noise_15conv_65k.csv --lr 0.000001 --optim=adam --print_every 50 --eval_every 100 --batch_size 1
 ```
