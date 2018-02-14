@@ -31,8 +31,6 @@ def create_parser(args_in=None):
     parser.add_argument('--emb_dim', type=int, default=250, help="batch size (default 16)")
     parser.add_argument('--rna_dim', type=int, default=203, help="batch size (default 16)")
     parser.add_argument('--use_cuda', action='store_true', help="batch size (default 16)")
-
-    
     
     if args_in is not None:
         args = parser.parse_args(args_in.split(" "))
@@ -41,8 +39,25 @@ def create_parser(args_in=None):
 
     return args
 
+def low_rank_approx(SVD=None, A=None, r=None):
+    """
+    Computes an r-rank approximation of a matrix
+    given the component u, s, and v of it's SVD
+    Requires: numpy
+    """
+    if not r:
+        r = A.shape[0]
 
-def original_script_dataset_processing(datnames,Y, arg1="0(,24,48...)", arg2=""):
+    if not SVD:
+        SVD = np.linalg.svd(A, full_matrices=True)
+    u, s, v = SVD
+    print(s, np.sum(s)/np.sum(s[:r]), ' variance explained')
+    Ar = np.zeros((len(u), len(v)))
+    for i in range(r):
+        Ar += s[i] * np.outer(u[i], v[i])
+    return Ar
+
+def original_script_dataset_processing(datnames,Y, arg1, pearson_file):
     """
     Data processing script from Alex's Affinity regression files
     Gets binding preference expressions for protein names, splits into train
@@ -51,39 +66,45 @@ def original_script_dataset_processing(datnames,Y, arg1="0(,24,48...)", arg2="")
     Y: Binding preference matrix
     """
     numset = arg1
-    trainfile = arg2
-    print( "trainset:", trainfile, numset)
-    tobj = open(trainfile, 'r')
+    #print( "trainset:", pearson_file, numset)
+    tobj = open(pearson_file, 'r')
     tlines = tobj.readlines()
     for i, tline in enumerate(tlines):
-        if tline[:6]=="###Set" and tline.strip().split()[-1] == numset:
-            print(i)
-            trainprots = np.array([tlines[i+2].strip().split(), tlines[i+3].strip().split()]).T
-            testprots = np.array([tlines[i+5].strip().split(), tlines[i+6].strip().split()]).T
+        #print(tline)
+    
+        if "###Set" in tline: #and tline.strip().split()[-1] == numset:
+            
+            #a = tlines[i+2]
+            #b = tlines[i+2].strip().split()
+            c = [tlines[i+2].strip().split(), tlines[i+3].strip().split()]
+            trainprots = np.array(c).T
+            
+            d = [tlines[i+5].strip().split(), tlines[i+6].strip().split()]
+            testprots = np.array(d).T
+            
             if len(np.intersect1d(trainprots[:,0], datnames)) !=0:
-                trainprots = trainprots[:,0]
-                testprots = testprots[:,0]
+            #  col0: 'RNCMPT00676' vs col1: 'T129595'
+                trainprots, testprots = trainprots[:,0], testprots[:,0]
+            
             else: 
-                trainprots = trainprots[:,1]
-                testprots = testprots[:,1]
-            indexestrain = []
-            indexestest = []
+                trainprots, testprots = trainprots[:,1], testprots[:,1]
+            
+            indexestrain, indexestest = [], []
             for i, ina in enumerate(datnames):
                 if ina in trainprots:
                     indexestrain.append(i)
                 elif ina in testprots:
                     indexestest.append(i)
-            indexestrain = np.array(indexestrain)
-            indexestest = np.array(indexestest)
-            Ytrain = Y[indexestrain]
-            Ytest = Y[indexestest]
-            trainprots = datnames[indexestrain]
-            testprots = datnames[indexestest]
-            print (np.shape(Ytest)) #, np.shape(Ptest))
-            print( np.shape(Ytrain)) #, np.shape(Ptrain))
-    return Ytrain, Ytest, trainprots, testprots #Ptrain, Ytest, Ptest
+            
+            # label, data train/test split
+            indexestrain, indexestest = np.array(indexestrain), np.array(indexestest)            
+            Ytrain, Ytest = Y[indexestrain], Y[indexestest]
+            trainprots, testprots = datnames[indexestrain], datnames[indexestest]
+            
+            #print ('train shape = %s, test shape = %s, %s '  %(np.shape(Ytrain), np.shape(Ytest), np.shape(Y)) ) 
+            # train: 213, test: 24, total: 407, unused: 170 
 
-
+    return Ytrain, Ytest, trainprots, testprots 
 
 # preprocessing on embedding df
 def split_labeled_protein_names(input_df, name_col_str):
@@ -94,22 +115,18 @@ def split_labeled_protein_names(input_df, name_col_str):
     filtered_df[name_col_str] = [x.split("_")[0] for x in filtered_df[name_col_str]]
     return filtered_df
     
-
 def average_overlapping_embs(emb_df, name_col):
     print(emb_df.shape)
     out_df = emb_df.groupby(name_col, as_index=False, axis=0).mean()
     print(out_df.shape)
     return out_df
 
-
-
 def filter_embs(Y, protnames, le_df):
     Y_df = pd.DataFrame(Y)
     Y_df["name_le_col"] = protnames
     
     total_df = Y_df.merge(le_df, left_on="name_le_col", right_on="name_le_col", how="inner")
-    Y_final = total_df[Y_df.columns]
-    embs_final = total_df[le_df.columns]
+    Y_final, embs_final = total_df[Y_df.columns], total_df[le_df.columns] 
     prots_final = Y_final.name_le_col
     #embs_final.fillna(value=0, inplace=True)
     
@@ -117,81 +134,46 @@ def filter_embs(Y, protnames, le_df):
     embs_final = embs_final.loc[:, embs_final.columns != 'name_le_col']
     
     return Y_final.as_matrix(), embs_final.as_matrix(), prots_final
-    
-
-
-def main_test():
-    # dummy data
-    print("Testing functionality of Similarity Regression")
-    learned_embs = torch.randn((777,10))
-    poss_matches = torch.randn((2555, 30))
-    known_matches = torch.randn((777,30))
-
-    test_model = SimilarityRegression(emb_dim=10, rna_dim=2555)
-    optimizer = SGD(test_model.parameters(), lr = 0.001)
-    test_model.init_weights()
-    # input_data = (learned_embs, known_matches)
-    batch_size = 5
-    num_epochs = 5
-    input_data = DataLoader(LowDimData(learned_embs, known_matches), batch_size=batch_size)
-    training_loop(batch_size, num_epochs, test_model, optimizer, input_data, poss_matches)
-
-
-
-    
+        
 def main():
     args = create_parser()
-    print(args)
-    
+
     # naming variables for convenience with legacy code
-    dtype = args.dtype # '--z' #sys.argv[sys.argv.index("--data")+1]
-    profiles = args.profiles # "../dropbox_files/Fullset_z_scores_setAB.txt" #sys.argv[sys.argv.index("--data")+2]
-    probefeatures = args.probefeatures # "ones" #sys.argv[sys.argv.index("--data")+3]
-    proteinfeatures = args.proteinfeatures # "Proteinsequence_latentspacevectors.txt" # sys.argv[sys.argv.index("--data")+4]
+    dtype, profiles, probefeatures, proteinfeatures = args.dtype, args.profiles, args.probefeatures, args.proteinfeatures
+
     #### get feature matrices and names
-    file_2 = args.file_2 #'../dropbox_files/Full_predictableRRM_pearson_gt3_trainset216_test24.txt'
-    emb_file = args.emb_file # "hiddens.csv"
+    pearson_file, emb_file = args.file_2, args.emb_file
+
 
     Y = np.genfromtxt(profiles, skip_header =1)[:,1:]
-    sevenmers = np.genfromtxt(profiles, skip_header=1)[:, 0]
-    ynames = np.array(open(profiles, 'r').readline().strip().split()[1:])
-
-
-    Y = np.nan_to_num(Y).T
-    D = []
-    datnames= ynames
-
-    Y_train, Y_test, trainprots, testprots = original_script_dataset_processing(ynames,Y, 
-                                                                                arg1="0", 
-                                                                                arg2=file_2
-                                                                               )
-    if emb_file == "hiddens.csv":
-        learned_embs_df = pd.read_csv(emb_file)
-    else:
-        learned_embs_df = pd.read_csv(emb_file, sep='\t')
-        learned_embs_df.rename(columns={learned_embs_df.columns[0]:"name"},inplace=True)
-
-
-
-
-
+    Y = np.nan_to_num(Y).T # (407, 16382)
+    
+    ynames = np.array(open(profiles, 'r').readline().strip().split()[1:])    
+    #sevenmers = np.genfromtxt(profiles, skip_header=1)[:, 0]
+    Y_train, Y_test, trainprots, testprots = original_script_dataset_processing(
+        ynames,Y, arg1="0", pearson_file=pearson_file)
+                                                                               
+    learned_embs_df = pd.read_csv(emb_file, sep='\t')
+    learned_embs_df.rename(columns={learned_embs_df.columns[0]:"name"},inplace=True)
     learned_embs_df.columns = ["{0}_le_col".format(x) for x in learned_embs_df.columns]
 
     learned_renamed = split_labeled_protein_names(learned_embs_df, "name_le_col")
     learned_renamed = average_overlapping_embs(learned_renamed, "name_le_col")
 
-
-
     Y_train_final, embs_train, trainprots_final = filter_embs(Y_train, trainprots, learned_renamed)
     Y_test_final, embs_test, testprots_final = filter_embs(Y_test, testprots, learned_renamed)
 
+    #Y_train_final = low_rank_approx(SVD=None, A=Y_train_final, r=False)
+    #yyt = Y_train_final
 
     yyt = np.dot(Y_train_final, Y_train_final.T)
-    #yyt_dev = np.dot(Y_test_final, Y_test_final.T)
+    
     # project Y_test_final onto Y_train_final to approx proj onto singular vectors
     yyt_dev = np.dot(Y_test_final, Y_train_final.T)
-    
-    
+    #print(yyt_dev.shape)
+    #yyt_dev = low_rank_approx(SVD=None, A = Y_test_final, r = 24 ) 
+    #print(yyt_dev.shape)
+
     print("embs shape", embs_train.shape)
     learned_embs =torch.FloatTensor(embs_train) # torch.randn((213,10))
     # replacing YYT on LHS with transposed embeddings 
@@ -208,7 +190,6 @@ def main():
     #for x in test_model.parameters():
     #    x.data = x.data.normal_(0.0, 0.5)
     
-    
     if args.use_cuda:
         learned_embs = learned_embs.cuda()
         poss_matches = poss_matches.cuda()
@@ -217,32 +198,43 @@ def main():
         poss_matches_dev = poss_matches_dev.cuda()
         known_matches_dev = known_matches_dev.cuda()
         test_model.cuda()
+     
+    optimizer = optim.Adam(test_model.parameters(), lr=args.lr) #, betas=(0.5, 0.999)) # ?
     
+    #test_model.init_weights()
     
-    if args.optim =='adam':
-        optimizer = optim.Adam(test_model.parameters(), lr=args.lr, betas=(0.5, 0.999))
-    else:
-        optimizer = optim.SGD(test_model.parameters(), lr =args.lr)
-    
-    test_model.init_weights()
-    # input_data = (learned_embs, known_matches)
-    batch_size = args.batch_size
-    num_epochs = args.num_epochs
     input_data = DataLoader(LowDimData(learned_embs, 
                                        known_matches), 
-                            batch_size=batch_size)
+                            batch_size= args.batch_size)
     dev_input_data = DataLoader(LowDimData(learned_embs_dev, 
                                            known_matches_dev), 
-                                batch_size=batch_size)
-    training_loop(batch_size, 
-                  num_epochs, 
+                                batch_size=args.batch_size)
+    training_loop(args.batch_size, 
+                  args.num_epochs, 
                   test_model, 
                   optimizer, 
-                  input_data, 
+                  input_data,  ##
                   poss_matches, 
                   dev_input_data, 
+                  embed_file = args.emb_file,
                   print_every=args.print_every, 
                   eval_every=args.eval_every)    
 
 if __name__ == '__main__':
     main()
+
+def main_test():
+    # dummy data
+    print("Testing functionality of Similarity Regression")
+    learned_embs = torch.randn((777,10))
+    poss_matches = torch.randn((2555, 30))
+    known_matches = torch.randn((777,30))
+
+    test_model = SimilarityRegression(emb_dim=10, rna_dim=2555)
+    optimizer = SGD(test_model.parameters(), lr = 0.001)
+    test_model.init_weights()
+    # input_data = (learned_embs, known_matches)
+    batch_size = 5
+    num_epochs = 5
+    input_data = DataLoader(LowDimData(learned_embs, known_matches), batch_size=batch_size)
+    training_loop(batch_size, num_epochs, test_model, optimizer, input_data, poss_matches)

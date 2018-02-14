@@ -35,7 +35,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
                             weight_decay=1e-5)
 
 def train(model, optimizer, num_epochs):
-    model.load_state_dict(torch.load(model_path))
+    #model.load_state_dict(torch.load(model_path))
     train_loader, valid_loader = loader(args.alignment)
     validation_loss_history, model_states = [], []
     
