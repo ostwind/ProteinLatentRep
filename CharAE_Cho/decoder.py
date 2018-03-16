@@ -31,15 +31,11 @@ class rnn_decoder(nn.Module):
 
         else:            
             output = embedded
-
         output = F.selu(output)
-        #print(output.data.)
-
         output, hidden = self.gru(
             output.unsqueeze(0), hidden.unsqueeze(0))
-        #print(output.data.shape)
-        output = self.out(output).squeeze(0)#.float()
-
+        output = self.out(output).squeeze(0)
+        
         return output, hidden, attn_weights
 
 class cnn_decoder(nn.Module): 

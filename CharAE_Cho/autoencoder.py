@@ -91,6 +91,7 @@ class CharLevel_autoencoder(nn.Module):
                   # # current symbol, current hidden state, outputs from encoder 
                   decoder_output, decoder_hidden, attn_weights = self.attention_decoder.forward(
                   input_embedded, decoder_hidden, encoder_outputs, attention)
+                  
                   values, input_symbol = decoder_output.max(1)
                   
                   input_embedded = self.decoder_embedding( input_symbol )
@@ -98,7 +99,8 @@ class CharLevel_autoencoder(nn.Module):
                   sequence_loss += self.criterion( 
                         decoder_output, target_data[:,symbol_index] )  
                   
-                  attentions[:,:,symbol_index] = attn_weights.data ##
+                  if not dont_return:
+                        attentions[:,:,symbol_index] = attn_weights.data ##
 
             if dont_return:
                   return sequence_loss

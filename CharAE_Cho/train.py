@@ -19,8 +19,6 @@ parser.add_argument('--seq_len', metavar='L', type = int, default= 78,
                    help='autoencoder layout')
 parser.add_argument('--alignment', metavar='L', type = str, default= 'aligned',
                    help='aligned, unaligned, delimited')
-
-
 # parser.add_argument('--swap_noise', metavar='L', type = int, default= 0,
 #                   help='number of symbol swaps for model to denoise')
 args = parser.parse_args()
@@ -32,13 +30,13 @@ learning_rate = 0.001
 criterion = nn.CrossEntropyLoss()
 model = CharLevel_autoencoder(criterion, seq_len, layers = args.archi )
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
-                            weight_decay=1e-5)
+                            weight_decay=1e-3)
 
 def train(model, optimizer, num_epochs):
     #model.load_state_dict(torch.load(model_path))
     train_loader, valid_loader = loader(args.alignment)
     validation_loss_history, model_states = [], []
-    
+    last_loss = 500
     for epoch in range(num_epochs):
         model.train()
         for index, (data, label) in enumerate(train_loader):
@@ -55,10 +53,15 @@ def train(model, optimizer, num_epochs):
                 else:
                     encoder_outputs, encoder_hidden = model.NMT_encode(embedded)
                 loss = model.GRU_decode(data, encoder_hidden, encoder_outputs)
-            
+
+            # if epoch > 0 and loss.data[0] - last_loss > 70:
+            #     print(data.data)
+            #     print( label)
+            # last_loss = loss.data[0]
+
             if index % 100 == 0:
                 print(epoch, index, loss.data[0])
-                valid_loss = evaluate(model, valid_loader)
+                valid_loss = evaluate(model, valid_loader) 
                 print('validation loss: ', valid_loss )
                 
                 validation_loss_history.append(valid_loss)
@@ -104,7 +107,7 @@ def evaluate(model, valid_loader):
         return loss.data[0]
 
 if __name__ == '__main__':
-    #train(model, optimizer, num_epochs)
+    train(model, optimizer, num_epochs)
     print('____________________extracting latent rep___________________')
     rep_path, indices_path = extract_latent_rep(model, args, model_path)
     #filter(rep_path, indices_path)

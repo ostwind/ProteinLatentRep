@@ -50,8 +50,8 @@ def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
             keys.append(protein_name)
             vals.append( "".join(sequence_filtered) )
 
-    #if sample_ind: # if position + sample filtered, write fasta version for Seq2Vec
-        #write_fasta(vals, keys, fasta_name = './data/RRM55_with_labeled.fasta')
+    if sample_ind: # if position + sample filtered, write fasta version for Seq2Vec
+        write_fasta(vals, keys, fasta_name = './data/RRM55_with_labeled.fasta')
         #print(len(vals), ' samples made it')
     
     df = pd.DataFrame({'keys': keys, 'vals': vals})
@@ -81,8 +81,8 @@ def _filter_positions(df, threshold = 0.0225, plot=False):
         hist('Percentage of Non-Gap Symbols by Position', position_occupancies, )
     print(sum(keep_pos_ind),'/', len(keep_pos_ind), ' positions made it')
     return keep_pos_ind
-
-def _filter_samples(df, threshold = 0.8, plot = False):
+1
+def _filter_samples(df, threshold = 0.7, plot = False):
     seq_list = df['vals'].tolist()
     
     sample_occupancies, keep_sample_ind =[], []
@@ -145,34 +145,34 @@ def preprocess(raw_txt_path = './data/combineddata.fasta'):
     print(df2.shape, ' samples made it')    
 
     ################ aligned/unaligned/delimited ###################3
-    original_len = len(df2['vals'][0])
+    # original_len = len(df2['vals'][0])
     
-    #df2['vals'] = df2['vals'].str.replace('\-\-+', '-') + ''.join( ['-' for i in range(78)] )
-    '''
-    VFLGGV-----EA----TF--------W-------------------G-YLVFELEKSVRSLL--C------------
-    VFLGGV-EA-TF-W-G-YLVFELEKSVRSLL-C---------------------------------------------
-    '''
+    # #df2['vals'] = df2['vals'].str.replace('\-\-+', '-') + ''.join( ['-' for i in range(78)] )
+    # '''
+    # VFLGGV-----EA----TF--------W-------------------G-YLVFELEKSVRSLL--C------------
+    # VFLGGV-EA-TF-W-G-YLVFELEKSVRSLL-C---------------------------------------------
+    # '''
     
-    df2['vals'] = df2['vals'].str.replace('\-', '') + ''.join( ['-' for i in range(original_len)] )
-    '''
-    VFLGGV-----EA----TF--------W-------------------G-YLVFELEKSVRSLL--C------------
-    VFLGGVEATFWGYLVFELEKSVRSLLC---------------------------------------------------
-    '''
+    # df2['vals'] = df2['vals'].str.replace('\-', '') + ''.join( ['-' for i in range(original_len)] )
+    # '''
+    # VFLGGV-----EA----TF--------W-------------------G-YLVFELEKSVRSLL--C------------
+    # VFLGGVEATFWGYLVFELEKSVRSLLC---------------------------------------------------
+    # '''
     
-    df2['vals'] = df2['vals'].apply(lambda x: x[:78])
+    # df2['vals'] = df2['vals'].apply(lambda x: x[:78])
     
     #################################################
-
-    one_hot_pickle(df2, path = './data/unaligned/')
+    print(df2['vals'])
+    one_hot_pickle(df2, path = './data/aligned/')
     
 
-    # count = 0
-    # thefile = open('test.txt', 'w')
-    # for item in df2['keys'].tolist():
-    #     if '||' in item:
-    #         count += 1
-    # print(count)
-    #  thefile.write("%s\n" % item)
+    count = 0
+    thefile = open('test.txt', 'w')
+    for item in df2['keys'].tolist():
+        if '||' in item:
+            count += 1
+    print(count)
+    # thefile.write("%s\n" % item)
 
     #sorted_proteins = df2['vals'].tolist()
     #df

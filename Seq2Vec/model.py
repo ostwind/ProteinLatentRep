@@ -5,13 +5,13 @@ from gensim.models import doc2vec, Doc2Vec
 from Bio import SeqIO
 import os
 import pickle
-from util import *
+#from util import *
 
 class Seq2Vec(doc2vec.Doc2Vec):
     def __init__(self,embedding_path = None,
      fasta_path = None, data_dir = None,
     window_size=3, size=300, window=30,
-    min_count=2, workers=4, epochs = 20):
+    min_count=2, workers=4, epochs = 40):
 
         self.embedding_path = embedding_path
         if not embedding_path:
@@ -126,7 +126,7 @@ class LabeledLineSentence(object):
         for source, prefix in self.sources.items():
             with utils.smart_open(source) as fin:
                 for item_no, line in enumerate(fin):
-                    #print(utils.to_unicode(line).split())
+                    print(utils.to_unicode(line).split())
                     yield LabeledSentence(utils.to_unicode(line).split(), [prefix + '_%s' % item_no])
 
     def to_array(self):

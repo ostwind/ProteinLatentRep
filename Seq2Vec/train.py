@@ -2,6 +2,9 @@
     this file trains a Seq2Vec model then tsne projects the representation
 '''
 import sys, os
+parent_dir = os.path.abspath(__file__ + "/../../")
+sys.path.append(parent_dir)
+
 
 from model import Seq2Vec
 import numpy as np 
@@ -12,7 +15,7 @@ from util.IO_tools import protein_rna_map
 
 fasta_input = './data/RRM55_with_labeled.fasta' 
 data_dir = './data/rrm_processed/' 
-representation_path = './Seq2Vec/Seq2Vec_100Dim.csv'
+representation_path = './Similarity_Reg/Seq2Vec_100Dim.csv'
 
 if __name__ == '__main__':
     model = Seq2Vec(None, fasta_input, data_dir)
@@ -24,8 +27,10 @@ if __name__ == '__main__':
     # all ids
     # name_ordering = list(model.all_ids())
 
+    
     name_ordering = list(model.all_ids())
-    dictionary = protein_rna_map()
+    #################################################
+    # dictionary = protein_rna_map()
     
     from util.IO_tools import write_to_csv
 
@@ -33,9 +38,11 @@ if __name__ == '__main__':
 
     for rrm_index, rrm in enumerate(name_ordering):
         representation.append(model.vect_rep(rrm))
-    
-    from util.tsne import pca
-    representation = pca(representation, pca_dim = 100) 
+    ##########################################################
+
+
+    #from util.tsne import pca
+    #representation = pca(representation, pca_dim = 100) 
 
     write_to_csv(name_ordering, representation, representation_path)
     
