@@ -13,13 +13,12 @@ class rnn_encoder(nn.Module):
         # input: (SEQ_LEN, BATCH_SIZE, HIDDEN_SIZE) hidden: (1, BATCH_SIZE, HIDDEN_SIZE)
         #print(input.data.shape, hidden.data.shape)
 
-        output = input.contiguous().view(1, 64, self.hidden_size)
+        output = input.contiguous().unsqueeze(0)
         output, hidden = self.gru(output, hidden)
-        
         return output, hidden
 
-    def initHidden(self):
-        return Variable(torch.zeros(2, 64, self.hidden_size))
+    def initHidden(self, batch_size):
+        return Variable(torch.zeros(2, batch_size, self.hidden_size))
 
 class cnn_encoder(nn.Module):
     def __init__(self, filter_widths, filter_config, char_embedding_dim):#, seq_len):

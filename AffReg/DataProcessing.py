@@ -93,7 +93,10 @@ def filter_embs(Y, protnames, le_df):
     Y_df = pd.DataFrame(Y)
     Y_df.loc[:, "name_le_col"] = protnames
     
+
     total_df = Y_df.merge(le_df, left_on="name_le_col", right_on="name_le_col", how="inner")
+
+    
     Y_final, embs_final = total_df[Y_df.columns], total_df[le_df.columns] 
     prots_final = Y_final.name_le_col
     

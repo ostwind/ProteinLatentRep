@@ -10,7 +10,7 @@ import pickle
 class Seq2Vec(doc2vec.Doc2Vec):
     def __init__(self,embedding_path = None,
      fasta_path = None, data_dir = None,
-    window_size=3, size=300, window=30,
+    window_size=3, size=300, window=5,
     min_count=2, workers=4, epochs = 40):
 
         self.embedding_path = embedding_path
@@ -29,7 +29,7 @@ class Seq2Vec(doc2vec.Doc2Vec):
         # embedding parameters, see doc2vec documentation for parameter explanation
         self.window_size = window_size
         self.size = size # dimensionality of the distributed representation
-        self.min_count = min_count
+        #self.min_count = min_count
         self.workers = workers
         self.epochs = epochs
         self.window = window
@@ -126,7 +126,7 @@ class LabeledLineSentence(object):
         for source, prefix in self.sources.items():
             with utils.smart_open(source) as fin:
                 for item_no, line in enumerate(fin):
-                    print(utils.to_unicode(line).split())
+                    #print(utils.to_unicode(line).split())
                     yield LabeledSentence(utils.to_unicode(line).split(), [prefix + '_%s' % item_no])
 
     def to_array(self):

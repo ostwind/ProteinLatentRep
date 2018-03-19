@@ -31,14 +31,13 @@ def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
             protein_name, protein = non_empty_strings[0], non_empty_strings[-1]
             #if not position_ind: # nothing filtered, do text tuncating
             # remove '>' from name, '/' -> '_', delete '\n' in protein seq
-            protein_name, protein = protein_name[1:].replace("/","_"), protein[:-2] 
-
+            protein_name, protein = protein_name[1:].replace("/","@"), protein[:-2] 
+            
             # filtering by samples, skip if the sample indicator variable is 0 at current sample    
             if sample_ind: # filtered, last call before pickling
                 if '||' not in protein_name: # if its unlabeled data AND was filtered as sample: 
                     if not sample_ind[line_index]:
                         continue
-                
             sequence_filtered = protein
             if position_ind:
                 # filtering by positions
@@ -46,7 +45,13 @@ def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
                 for i in range(len(position_ind)):
                     if position_ind[i]: # 1/0 indicator bit
                         sequence_filtered.append( protein[i] )
-            
+                # if  line_index ==2001:
+                #     #print( "".join(sequence_filtered) )
+                #     print( keys[2000] )
+                #     print( keys[2] )
+                #     print( vals[2000])
+                #     print( vals[2])
+                #     print('_____________________________')
             keys.append(protein_name)
             vals.append( "".join(sequence_filtered) )
 
@@ -57,7 +62,7 @@ def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
     df = pd.DataFrame({'keys': keys, 'vals': vals})
     return df
 
-def _filter_positions(df, threshold = 0.0225, plot=False):
+def _filter_positions(df, threshold = 0.01, plot=False):
     seq_list = df['vals'].tolist()
     #print(seq_list[0], len(seq_list))
     
@@ -81,8 +86,8 @@ def _filter_positions(df, threshold = 0.0225, plot=False):
         hist('Percentage of Non-Gap Symbols by Position', position_occupancies, )
     print(sum(keep_pos_ind),'/', len(keep_pos_ind), ' positions made it')
     return keep_pos_ind
-1
-def _filter_samples(df, threshold = 0.7, plot = False):
+
+def _filter_samples(df, threshold = 0, plot = False):
     seq_list = df['vals'].tolist()
     
     sample_occupancies, keep_sample_ind =[], []
@@ -162,7 +167,7 @@ def preprocess(raw_txt_path = './data/combineddata.fasta'):
     # df2['vals'] = df2['vals'].apply(lambda x: x[:78])
     
     #################################################
-    print(df2['vals'])
+    #print(df2['vals'])
     one_hot_pickle(df2, path = './data/aligned/')
     
 

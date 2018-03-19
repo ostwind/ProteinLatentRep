@@ -5,7 +5,7 @@ sys.path.append(parent_dir)
 
 from CharAE_Cho import * 
 from util.regularization import _add_swap_noise, early_stopping 
-from autoencoder import CharLevel_autoencoder
+from autoencoder import CharLevel_autoencoder, OneHot
 from postprocess import extract_latent_rep
 import pickle 
 import argparse
@@ -15,7 +15,7 @@ parser.add_argument('--epochs', metavar='N', type=int,
                    default = 7, help='number of epochs')
 parser.add_argument('--archi', metavar='M', type = str, default= 'CR_R',
                    help='autoencoder layout')
-parser.add_argument('--seq_len', metavar='L', type = int, default= 78,
+parser.add_argument('--seq_len', metavar='L', type = int, default= 84,
                    help='autoencoder layout')
 parser.add_argument('--alignment', metavar='L', type = str, default= 'aligned',
                    help='aligned, unaligned, delimited')
@@ -23,23 +23,25 @@ parser.add_argument('--alignment', metavar='L', type = str, default= 'aligned',
 #                   help='number of symbol swaps for model to denoise')
 args = parser.parse_args()
 
-model_path = './%s_%s.pth' %(args.archi, args.alignment)
+model_path = './%s_%s.pth' %(args.archi, args.alignment) #
 num_epochs, seq_len = args.epochs, args.seq_len
-learning_rate = 0.001
+learning_rate = 0.0001
 
-criterion = nn.CrossEntropyLoss()
+criterion = nn.BCEWithLogitsLoss() #nn.CrossEntropyLoss()
 model = CharLevel_autoencoder(criterion, seq_len, layers = args.archi )
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
-                            weight_decay=1e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_decay=1e-5)
 
 def train(model, optimizer, num_epochs):
-    #model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path))
     train_loader, valid_loader = loader(args.alignment)
     validation_loss_history, model_states = [], []
-    last_loss = 500
+    
     for epoch in range(num_epochs):
         model.train()
         for index, (data, label) in enumerate(train_loader):
+            model.batch_size = data.shape[0]  
+
+            OneHotData = Variable( OneHot(data) )
             data = Variable(data)
             embedded = model.Embed_encode(data)
             # ===================forward=====================
@@ -52,12 +54,7 @@ def train(model, optimizer, num_epochs):
                     encoder_outputs, encoder_hidden = model.GRU_encode(embedded)
                 else:
                     encoder_outputs, encoder_hidden = model.NMT_encode(embedded)
-                loss = model.GRU_decode(data, encoder_hidden, encoder_outputs)
-
-            # if epoch > 0 and loss.data[0] - last_loss > 70:
-            #     print(data.data)
-            #     print( label)
-            # last_loss = loss.data[0]
+                loss = model.GRU_decode(data, encoder_hidden, encoder_outputs, OneHotData)
 
             if index % 100 == 0:
                 print(epoch, index, loss.data[0])
@@ -91,6 +88,9 @@ def train(model, optimizer, num_epochs):
 def evaluate(model, valid_loader):
     model.eval()
     for index, (data, label) in enumerate(valid_loader):
+        model.batch_size = data.shape[0]
+
+        OneHotData = Variable( OneHot(data) )
         data = Variable(data, volatile = True)
         embedded = model.Embed_encode(data)     
  
@@ -103,7 +103,7 @@ def evaluate(model, valid_loader):
                 encoder_outputs, encoder_hidden = model.GRU_encode(embedded)    
             else:        
                 encoder_outputs, encoder_hidden = model.NMT_encode(embedded)
-            loss = model.GRU_decode( data, encoder_hidden, encoder_outputs)
+            loss = model.GRU_decode( data, encoder_hidden, encoder_outputs, OneHotData)
         return loss.data[0]
 
 if __name__ == '__main__':

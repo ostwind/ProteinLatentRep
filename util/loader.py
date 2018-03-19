@@ -30,7 +30,7 @@ def loader( alignment, batch_size = 64, shuffle = True, train_portion = 0.95, se
     
     #dataset = torch.from_numpy(dataset)
     name_list = pickle.load(open(name_pickle_path, "rb"))
-    name_indices  = np.array(range(len(name_list)))
+    name_indices  = np.array(name_list)
     #print(dataset.shape, name_indices.shape )
 
     train_dataset = dataset[ uniform_sampling < train_portion]
@@ -39,17 +39,22 @@ def loader( alignment, batch_size = 64, shuffle = True, train_portion = 0.95, se
     valid_labels = name_indices[  uniform_sampling >= train_portion]
 
     #print(len(train_dataset[0]), len(train_dataset[4]))
-    source = TensorDataset(torch.from_numpy(train_dataset), 
-    torch.from_numpy(train_labels)) 
-
-    train_loader = DataLoader(
-    source, batch_size = batch_size, shuffle = shuffle, drop_last=True)
-
+    
     valid_source = TensorDataset(torch.from_numpy(valid_dataset),
     torch.from_numpy(valid_labels)) 
 
     valid_loader = DataLoader(
-    valid_source, batch_size = batch_size, shuffle = shuffle, drop_last=True)
+    valid_source, batch_size = batch_size, shuffle = shuffle, drop_last=False)
+        
+    if train_portion == 0:
+        return 0, valid_loader
+
+    source = TensorDataset(torch.from_numpy(train_dataset), 
+    torch.from_numpy(train_labels)) 
+
+    train_loader = DataLoader(
+    source, batch_size = batch_size, shuffle = shuffle, drop_last=False)
+
     
     return train_loader, valid_loader
     

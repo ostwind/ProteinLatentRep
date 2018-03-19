@@ -8,16 +8,17 @@ class rnn_decoder(nn.Module):
         
         self.attn = nn.Linear(3*hidden_size, emit_len) # due to bi-directional gru
         self.attn_combine = nn.Linear(3*hidden_size, hidden_size) #TODO changed second argument to 2Xhidden_size
-        self.dropout = nn.Dropout( 0.2 )
+        #self.dropout = nn.Dropout( 0.2 )
         
         self.gru = nn.GRU(
             input_size = hidden_size,
             hidden_size = 2*hidden_size)
         self.out = nn.Linear(2*hidden_size, 23)
+        #self.softmax = nn.Softmax(dim = 1)
 
-    def forward(self, embedded, hidden, encoder_outputs, attention):
-        hidden = hidden.transpose(0, 1).contiguous().view(64, -1)
-        embedded = self.dropout(embedded)
+    def forward(self, embedded, hidden, encoder_outputs, attention, batch_size):
+        hidden = hidden.transpose(0, 1).contiguous().view(batch_size, -1)
+        #embedded = self.dropout(embedded)
         
         if attention:
             all_info = ( torch.cat((embedded, hidden), 1) ) # 64 X (3*64)
@@ -31,11 +32,11 @@ class rnn_decoder(nn.Module):
 
         else:            
             output = embedded
-        output = F.selu(output)
-        output, hidden = self.gru(
-            output.unsqueeze(0), hidden.unsqueeze(0))
-        output = self.out(output).squeeze(0)
+        output = F.relu(output)
+        output, hidden = self.gru(output.unsqueeze(0), hidden.unsqueeze(0))
         
+        output = self.out(output.squeeze(0))
+        #output =  self.softmax(output)
         return output, hidden, attn_weights
 
 class cnn_decoder(nn.Module): 

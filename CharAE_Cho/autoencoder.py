@@ -6,7 +6,7 @@ import random
 class CharLevel_autoencoder(nn.Module):
       def __init__(self, criterion, seq_len, layers ):
             super(CharLevel_autoencoder, self).__init__()
-            
+            self.batch_size = 64
             self.layers = layers
             self.seq_len = seq_len
             self.emit_len = seq_len//6 #CR|R C|C conv encoder -> pooled activations 
@@ -14,12 +14,12 @@ class CharLevel_autoencoder(nn.Module):
                   self.emit_len = seq_len
 
             self.layers = layers    
-            self.char_embedding_dim = 32
+            self.char_embedding_dim = 23
             self.encoder_embedding = nn.Embedding(23, self.char_embedding_dim)
             
-            self.filter_widths = list(range(1, 8))
-            #self.filter_config = [10, 10, 20, 20, 10, 10, 10] 
-            self.filter_config = [20, 20, 40, 40, 20, 20, 20] # too wide leads to memorization
+            self.filter_widths = list(range(1, 5))
+            self.filter_config = [10, 10, 20, 20] 
+            #self.filter_config = [20, 20, 40, 40, 20, 20, 20] # too wide leads to memorization
             self.cnn_encoder = cnn_encoder(
             filter_widths = self.filter_widths,
             filter_config = self.filter_config,
@@ -53,13 +53,14 @@ class CharLevel_autoencoder(nn.Module):
 
       def GRU_encode(self, activations):
             if self.layers == 'R_R':
-                  activations = activations.transpose(1,3).contiguous().view(64, self.emit_len, -1)
+                  activations = activations.transpose(1,3).contiguous().view(
+                        self.batch_size, self.emit_len, -1)
             
             else: 
                   activations = activations.transpose(1, 2).contiguous()
 
-            encoder_hidden = self.rnn_encoder.initHidden()
-            encoder_outputs = Variable(torch.zeros(64, self.emit_len, 2*self.decoder_hidden_size))
+            encoder_hidden = self.rnn_encoder.initHidden( self.batch_size )
+            encoder_outputs = Variable(torch.zeros(self.batch_size, self.emit_len, 2*self.decoder_hidden_size))
             
             for symbol_ind in range(self.emit_len): 
                   current_symbol = activations[:,symbol_ind,:] 
@@ -78,38 +79,43 @@ class CharLevel_autoencoder(nn.Module):
 
             return encoder_outputs, encoder_hidden
 
-      def GRU_decode(self, target_data, encoder_hidden, encoder_outputs,
+      def GRU_decode(self, target_data, encoder_hidden, encoder_outputs, OneHotTarget,
        dont_return = True, attention = True):   #index for output purposes
             decoder_hidden = encoder_hidden
-            input_embedded = Variable(torch.LongTensor([17]).repeat(64)) # SOS token
+            input_embedded = Variable(torch.LongTensor([17]).repeat(self.batch_size)) # SOS token
             input_embedded = self.decoder_embedding( input_embedded )
             
             sequence_loss = 0
-            attentions = torch.FloatTensor(64, 78, 78) ##
-
+            decoder_outputs = Variable( torch.FloatTensor(self.batch_size, self.seq_len, 23 ) )
             for symbol_index in range(self.seq_len): 
                   # # current symbol, current hidden state, outputs from encoder 
                   decoder_output, decoder_hidden, attn_weights = self.attention_decoder.forward(
-                  input_embedded, decoder_hidden, encoder_outputs, attention)
+                  input_embedded, decoder_hidden, encoder_outputs, attention, self.batch_size)
                   
-                  values, input_symbol = decoder_output.max(1)
+                  values, symbol_pred = decoder_output.max(1)
                   
-                  input_embedded = self.decoder_embedding( input_symbol )
+                  input_embedded = self.decoder_embedding( symbol_pred )
                   
-                  sequence_loss += self.criterion( 
-                        decoder_output, target_data[:,symbol_index] )  
-                  
-                  if not dont_return:
-                        attentions[:,:,symbol_index] = attn_weights.data ##
+                  #sequence_loss += self.criterion( 
+                  #      decoder_output, target_data[:,symbol_index] )  
+                  decoder_outputs[:, symbol_index, :] = decoder_output
 
-            if dont_return:
-                  return sequence_loss
-
-            #print(attn_weights)
-            return sequence_loss, attentions ##
+            sequence_loss = self.criterion( 
+                  decoder_outputs.double(), 
+                  OneHotTarget.double() )  
+            
+            return sequence_loss ##
       
       def Conv_decode(self, target_data, pooled_activations, unpool_indices):
             prediction =  self.deconv_decoder( pooled_activations, unpool_indices )
             target_data = target_data.view(-1)
             loss = self.criterion( prediction, target_data )
             return loss
+
+def OneHot(tensor):
+    batch_size, seq_len =  tensor.shape
+    tensor = torch.unsqueeze(tensor, 2)
+    OneHot = torch.LongTensor(batch_size, seq_len, 23).zero_()
+    #print(OneHot.shape, tensor.shape)
+    OneHot = OneHot.scatter_(2, tensor , 1)
+    return OneHot
