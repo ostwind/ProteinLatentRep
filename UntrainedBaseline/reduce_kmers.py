@@ -13,10 +13,9 @@ def main(args):
     
     # # Center and scale
     # kmers = StandardScaler().fit_transform(kmers)
+    print(kmers.shape)
     
-    # # Compute PCA
-    
-    for dim in [64, 128, 200]:
+    for dim in [128]:
         pca = PCA(n_components=dim, whiten=args.whiten)
         reduced_kmers = pca.fit_transform(kmers)
 
