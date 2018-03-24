@@ -9,9 +9,6 @@ def create_parser(args_in=None):
     parser.add_argument('--pearson_file', type=str, default='../dropbox_files/Full_predictableRRM_pearson_gt3_trainset216_test24.txt', help="training set")
     parser.add_argument('--emb_file', type=str, default="hiddens.csv", help="low dimensional embeddings")
     # pytorch arguments 
-    parser.add_argument('--lr', type=float, default=0.001, help="learning rate for optim")
-    parser.add_argument('--eval_every', type=int, default=100, help="print auc on dev set every iterations (default: 5000)")
-    parser.add_argument('--print_every', type=int, default=100, help="print auc on dev set every iterations (default: 5000)")
     args = parser.parse_args()
     return args
 
@@ -28,7 +25,6 @@ def original_script_dataset_processing(datnames,Y, arg1, pearson_file):
     tobj = open(pearson_file, 'r')
     tlines = tobj.readlines()
     for i, tline in enumerate(tlines):
-        #print(tline)
     
         if "###Set" in tline: #and tline.strip().split()[-1] == numset:
             c = [tlines[i+2].strip().split(), tlines[i+3].strip().split()]
@@ -93,10 +89,8 @@ def filter_embs(Y, protnames, le_df):
     Y_df = pd.DataFrame(Y)
     Y_df.loc[:, "name_le_col"] = protnames
     
-
     total_df = Y_df.merge(le_df, left_on="name_le_col", right_on="name_le_col", how="inner")
-
-    
+  
     Y_final, embs_final = total_df[Y_df.columns], total_df[le_df.columns] 
     prots_final = Y_final.name_le_col
     

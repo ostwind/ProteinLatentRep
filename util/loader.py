@@ -14,7 +14,7 @@ def loader( alignment, batch_size = 64, shuffle = True, train_portion = 0.95, se
     np.random.seed(0)
 
     data_pickle_path = "./data/%s/data.p" %(alignment)
-    name_pickle_path = "./data/%s/names.p" %(alignment)
+    name_pickle_path = "./data/%s/indices.p" %(alignment)
 
     if not os.path.isfile(data_pickle_path) or not os.path.isfile(name_pickle_path):
         print('data or label pickles missing, preprocessing from raw file @ ../data/PF00076_rp55.txt')

@@ -87,7 +87,7 @@ def _filter_positions(df, threshold = 0.01, plot=False):
     print(sum(keep_pos_ind),'/', len(keep_pos_ind), ' positions made it')
     return keep_pos_ind
 
-def _filter_samples(df, threshold = 0, plot = False):
+def _filter_samples(df, threshold = 0.4, plot = False):
     seq_list = df['vals'].tolist()
     
     sample_occupancies, keep_sample_ind =[], []
@@ -122,7 +122,7 @@ def one_hot_pickle(df2, path):
     print(dict(zip(integers, symbols)) )
     #print('SOS token int encoded as: ', label_encoder.transform(['SOS']))
     
-    dataset = []
+    dataset, indices = [], []
     
     for index, seq in enumerate(seq_list):
         values = np.array(list(seq))
@@ -130,9 +130,12 @@ def one_hot_pickle(df2, path):
         #print('integer encoded sequence shape: %s' %(integer_encoded.shape))
         dataset.append(integer_encoded)
         #print(list(label_encoder.inverse_transform(integer_encoded)))
-    
-    pickle.dump( np.array(dataset), open( path + "data.p", "wb" ) )
+        indices.append(index)
+
+    pickle.dump( np.array(indices), open( path + "indices.p", "wb" ) )
+    pickle.dump(  np.array(dataset), open( path + "data.p", "wb" ) )
     pickle.dump( np.array(name_list), open( path + "names.p", "wb" ) )
+
 
 def preprocess(raw_txt_path = './data/combineddata.fasta'):
     assert os.path.isfile(raw_txt_path), '%s not found!' %(raw_txt_path)
