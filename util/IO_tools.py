@@ -30,3 +30,11 @@ def write_to_csv(name_ordering, proteins, path):
     df = pd.DataFrame(data=proteins,
               index=name_ordering,)    
     df.to_csv(path , sep='\t')
+
+def OneHot(tensor):
+    batch_size, seq_len =  tensor.shape
+    tensor = torch.unsqueeze(tensor, 2)
+    OneHot = torch.LongTensor(batch_size, seq_len, 23).zero_()
+    #print(OneHot.shape, tensor.shape)
+    OneHot = OneHot.scatter_(2, tensor , 1)
+    return OneHot

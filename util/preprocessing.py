@@ -31,8 +31,10 @@ def txt_to_csv(raw_txt_path,  position_ind = None, sample_ind = None):
             protein_name, protein = non_empty_strings[0], non_empty_strings[-1]
             #if not position_ind: # nothing filtered, do text tuncating
             # remove '>' from name, '/' -> '_', delete '\n' in protein seq
-            protein_name, protein = protein_name[1:].replace("/","@"), protein[:-2] 
+            #protein_name, protein = protein_name[1:].replace("/","@"), protein[:-2] 
+            protein_name, protein = protein_name[1:], protein[:-2] 
             
+
             # filtering by samples, skip if the sample indicator variable is 0 at current sample    
             if sample_ind: # filtered, last call before pickling
                 if '||' not in protein_name: # if its unlabeled data AND was filtered as sample: 
@@ -87,7 +89,7 @@ def _filter_positions(df, threshold = 0.01, plot=False):
     print(sum(keep_pos_ind),'/', len(keep_pos_ind), ' positions made it')
     return keep_pos_ind
 
-def _filter_samples(df, threshold = 0.4, plot = False):
+def _filter_samples(df, threshold = 0.74, plot = True):
     seq_list = df['vals'].tolist()
     
     sample_occupancies, keep_sample_ind =[], []
@@ -172,7 +174,6 @@ def preprocess(raw_txt_path = './data/combineddata.fasta'):
     #################################################
     #print(df2['vals'])
     one_hot_pickle(df2, path = './data/aligned/')
-    
 
     count = 0
     thefile = open('test.txt', 'w')

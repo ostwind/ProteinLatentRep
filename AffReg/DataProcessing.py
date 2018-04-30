@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 from Bio import SeqIO
 import pandas as pd
+import pickle
 
 def create_parser(args_in=None):
     parser = argparse.ArgumentParser(description="Affinity Regression")
@@ -12,89 +13,87 @@ def create_parser(args_in=None):
     args = parser.parse_args()
     return args
 
-def original_script_dataset_processing(datnames,Y, arg1, pearson_file):
-    """
-    Data processing script from Alex's Affinity regression files
-    Gets binding preference expressions for protein names, splits into train
-    and test sets based on predefined cuts.
-    datnames: Protein names to filter for
-    Y: Binding preference matrix
-    """
-    numset = arg1
-    #print( "trainset:", pearson_file, numset)
-    tobj = open(pearson_file, 'r')
-    tlines = tobj.readlines()
-    for i, tline in enumerate(tlines):
-    
-        if "###Set" in tline: #and tline.strip().split()[-1] == numset:
-            c = [tlines[i+2].strip().split(), tlines[i+3].strip().split()]
-            trainprots = np.array(c).T
-            
-            d = [tlines[i+5].strip().split(), tlines[i+6].strip().split()]
-            testprots = np.array(d).T
-            
-            if len(np.intersect1d(trainprots[:,0], datnames)) !=0:
-            #  col0: 'RNCMPT00676' vs col1: 'T129595'
-                trainprots, testprots = trainprots[:,0], testprots[:,0]
-            
-            else: 
-                trainprots, testprots = trainprots[:,1], testprots[:,1]
-            
-            indexestrain, indexestest = [], []
-            for i, ina in enumerate(datnames):
-                if ina in trainprots:
-                    indexestrain.append(i)
-                elif ina in testprots:
-                    indexestest.append(i)
-            
-            # label, data train/test split
-            indexestrain, indexestest = np.array(indexestrain), np.array(indexestest)            
-            Ytrain, Ytest = Y[indexestrain], Y[indexestest]
-            trainprots, testprots = datnames[indexestrain], datnames[indexestest]
-    return Ytrain, Ytest, trainprots, testprots 
-
-def get_labeled(input_df, name_col_str):
+def GetLabeledAndCombine(embedding, name_col_str):
     # reprocess names so that *||RNCMPT00232_RRM__0 becomes RNCMPT00232
     # also just filters for labeled data
-    filtered_df = input_df[input_df[name_col_str].str.contains("\|\|")]
-    filtered_df.loc[:, name_col_str] = [x.split("||")[1] for x in filtered_df[name_col_str]]
-    filtered_df.loc[:,name_col_str] = [x.split("_")[0] for x in filtered_df[name_col_str]]
-    return filtered_df
+    embedding.rename(columns={embedding.columns[0]:"name"},inplace=True)
+    embedding.columns = ["{0}_le_col".format(x) for x in embedding.columns]
+
+    # lost 13+1 RNACompete experiments here
+    embedding = embedding[embedding[name_col_str].str.contains("\|\|")]
+    embedding.loc[:, name_col_str] = [x.split("||")[1] for x in embedding[name_col_str]]
+    embedding.loc[:,name_col_str] = [x.split("_")[0] for x in embedding[name_col_str]]
     
-def average_overlapping_embs(emb_df, name_col):
-    out_df = emb_df.groupby(name_col, as_index=False, axis=0).mean() #? 
-    return out_df
-
-def LowRank_OrthoMat(matrix, low_rank_dim, LeftOrtho):
-    ''' applies SVD to matrix, returns low rank approximation of M, 
-        and Left (VS^-1) or Right (S^-1V)^T orthogonal matrix (for reconstructing original W) 
-    '''
-    U, S, V = np.linalg.svd(matrix, full_matrices=False)
-    U, S, V = U[:, :low_rank_dim], np.diag(S[:low_rank_dim]), V[:low_rank_dim, :]
-
-    matrix_low_rank = np.matmul( np.matmul(U, S) , V)
-    if LeftOrtho:
-        matrix_LeftMat_reconstruct = np.matmul( V.T, np.linalg.inv(S) )     
-        return matrix_low_rank, matrix_LeftMat_reconstruct, U
-    else: 
-        #print(matrix.shape, U.shape, S.shape, V.shape)
-        matrix_RightMat_reconstruct = np.matmul( np.linalg.inv(S), V ).T
-        #print(matrix_low_rank.shape, matrix_RightMat_reconstruct.shape)
-        return matrix_low_rank, matrix_RightMat_reconstruct
-
-def filter_embs(Y, protnames, le_df):
+    embedding = embedding.groupby(name_col_str, as_index=False, axis=0).mean() #? 
+    
+    return embedding
+    
+def filter_embs(Y, protnames, embedding, args):
     ''' merges Y's z-scores with embedding file according to protein names, then split.
         prots_final: list of protein names in the order of Y and embedding
     '''
     Y_df = pd.DataFrame(Y)
     Y_df.loc[:, "name_le_col"] = protnames
+    total_df = Y_df.merge(embedding, left_on="name_le_col", right_on="name_le_col", how="inner")
+    path_295 = '../dropbox_files/Full_proteinlist_RRMprotein_top100pearson.txt'
     
-    total_df = Y_df.merge(le_df, left_on="name_le_col", right_on="name_le_col", how="inner")
-  
-    Y_final, embs_final = total_df[Y_df.columns], total_df[le_df.columns] 
+    
+    with open(args.pearson_file) as f:
+        _ = f.readline()  
+        _ = f.readline()
+        train = f.readline()
+        train2 = f.readline()
+        _ = f.readline()
+        test = f.readline()
+
+    # with open(path_295) as f: #args.pearson_file) as f:
+    #     _ = f.readline()
+    #     data = f.readline()
+
+    RRM_prots = '|'.join( train.split(' ') + train2.split(' ') + test.split(' '))# + data.split(' ') )
+    #RRM_prots = '|'.join( data.split(' '))# + train2.split(' ') + test.split(' ') )
+    
+    #print(RRM_prots)
+    #!!!
+    total_df = total_df[ total_df.name_le_col.str.contains(RRM_prots) ]
+    print(total_df.shape)
+
+    #exit()
+
+    Y_final, embs_final = total_df[Y_df.columns], total_df[embedding.columns] 
     prots_final = Y_final.name_le_col
     
     Y_final = Y_final.loc[:, Y_final.columns != 'name_le_col']
     embs_final = embs_final.loc[:, embs_final.columns != 'name_le_col']
+    
     return Y_final.as_matrix(), embs_final.as_matrix(), prots_final
 
+def SVD(Y_train, low_rank_dim = 80):
+    #D = pickle.load(open( "D.p", "rb" ))
+    # np.matmul(Y_train, D)
+    U, S, V = np.linalg.svd( Y_train , full_matrices=False)
+    #print( 'percent variance explained: ', np.sum( S[:low_rank_dim] )/ np.sum(S) )
+    U, S, V = U[:, :low_rank_dim], np.diag(S[:low_rank_dim]), V[:low_rank_dim, :]
+    return U #X_train, X_test
+
+def LoadData():
+    args = create_parser()
+    pearson_file, emb_file, profiles = args.pearson_file, args.emb_file, args.profiles
+
+    Y = np.genfromtxt(profiles, skip_header =1)[:,1:]
+    Y = np.nan_to_num(Y).T # (407, 16382)
+    #Y = normalize(Y, axis = 0) #normalize each PBM experiment (row) following supple. sec 1.1
+    ynames = np.array(open(profiles, 'r').readline().strip().split()[1:])    
+
+    if 'kmers.csv' in emb_file:                                         
+        embedding = pd.read_csv(emb_file)
+    else:
+        embedding = pd.read_csv(emb_file, sep='\t')
+    
+    embedding = GetLabeledAndCombine(embedding, "name_le_col")
+    Y, X, prots = filter_embs(Y, ynames, embedding, args)
+    
+    #Y_test, X_test, testprots_final = filter_embs(Y_test, testprots, embedding)
+    #print(Y_train.shape, X_train.shape)
+    
+    return X, Y, prots 

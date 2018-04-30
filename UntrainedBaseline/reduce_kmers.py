@@ -15,22 +15,22 @@ def main(args):
     # kmers = StandardScaler().fit_transform(kmers)
     print(kmers.shape)
     
-    for dim in [128]:
-        pca = PCA(n_components=dim, whiten=args.whiten)
-        reduced_kmers = pca.fit_transform(kmers)
+    # for dim in [128]:
+    #     pca = PCA(n_components=dim, whiten=args.whiten)
+    #     reduced_kmers = pca.fit_transform(kmers)
 
-        # # Format to match learned reps from trained models
-        #reduced_kmers = kmers
-        reduced_kmers = pd.DataFrame(reduced_kmers)
-        reduced_kmers[ 'name' ] = names
+    #     # # Format to match learned reps from trained models
+    #     #reduced_kmers = kmers
+    #     reduced_kmers = pd.DataFrame(reduced_kmers)
+    #     reduced_kmers[ 'name' ] = names
 
-        reduced_kmers = reduced_kmers.set_index( 'name' )
+    #     reduced_kmers = reduced_kmers.set_index( 'name' )
 
-        #print(reduced_kmers.head())
+    #     #print(reduced_kmers.head())
         
-        output = args.save_dir+'4mer'+str(dim)+'_kmers.csv'
-        #+str(args.whiten)
-        reduced_kmers.to_csv(output)
+    #     output = args.save_dir+'4mer'+str(dim)+'_kmers.csv'
+    #     #+str(args.whiten)
+    #     reduced_kmers.to_csv(output)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
