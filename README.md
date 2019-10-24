@@ -1,5 +1,6 @@
 # Latent Representation for RNA Recognition Motifs
-Data Science Capstone Project for Millie Dwyer, Julie Helmers, Shasha Lin, and Lihan Yao. Mentors: Quaid Morris and Alexander Sasse.  
+Data Science Capstone Project for Millie Dwyer, Julie Helmers, Shasha Lin, and Lihan Yao. 
+Supervised by Dr. Quaid Morris.  
 
 ## How can this representation be used?
 After processing RNA Recognition Motif data from Uniprot, our models complete unsupervised learning on this input to generate an embedding.
